@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mf-brand: #EA5B0C;
+  --mf-brand-rgb: 234 91 12;
+  --mf-active: #FFF1EA;
+  --mf-dark-bg: #0f172a;
+  --mf-dark-surface: #111827;
+  --mf-dark-muted: #1f2937;
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #f7f8fb;
+  color: #172033;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.mf-card {
+  @apply rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-soft;
+}
+
+.compact .mf-card {
+  @apply px-3 py-2;
+}
+
+.compact article .mt-3 {
+  margin-top: 0.5rem;
+}
+
+.compact article .mb-4 {
+  margin-bottom: 0.75rem;
+}
+
+.mf-focus {
+  @apply focus:outline-none;
+}
+
+.mf-focus:focus {
+  border-color: var(--mf-brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mf-brand) 25%, transparent);
+}
+
+.ProseMirror {
+  min-height: 130px;
+  outline: none;
+}
+
+.ProseMirror p {
+  margin: 0.5rem 0;
+}
+
+.dark {
+  color-scheme: dark;
+  background: var(--mf-dark-bg);
+  color: #e2e8f0;
+}
+
+.dark body,
+.dark .bg-slate-50 {
+  background-color: var(--mf-dark-bg);
+}
+
+.dark .bg-white {
+  background-color: var(--mf-dark-surface);
+}
+
+.dark .bg-slate-100 {
+  background-color: var(--mf-dark-muted);
+}
+
+.dark .bg-slate-50 {
+  background-color: var(--mf-dark-bg);
+}
+
+.dark .border-slate-200,
+.dark .border-slate-200\/80 {
+  border-color: rgba(71, 85, 105, 0.8);
+}
+
+.dark .text-slate-950,
+.dark .text-slate-800,
+.dark .text-slate-700 {
+  color: #e2e8f0;
+}
+
+.dark .text-slate-600,
+.dark .text-slate-500 {
+  color: #94a3b8;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+.dark .shadow-soft {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.dark .bg-active {
+  background-color: color-mix(in srgb, var(--mf-brand) 18%, var(--mf-dark-surface));
+}
+
+.text-brand {
+  color: rgb(var(--mf-brand-rgb));
+}
+
+.bg-brand {
+  background-color: rgb(var(--mf-brand-rgb));
+}
+
+.border-brand {
+  border-color: rgb(var(--mf-brand-rgb));
+}
+
+.ring-brand {
+  --tw-ring-color: rgb(var(--mf-brand-rgb));
+}
+
+.dark .text-brand {
+  color: rgb(var(--mf-brand-rgb));
+}
+
+.dark .bg-brand {
+  background-color: rgb(var(--mf-brand-rgb));
+}
+
+.dark .border-brand {
+  border-color: rgb(var(--mf-brand-rgb));
+}
+
+.dark .prose,
+.dark .prose :where(p, div, span, li, strong, em, blockquote, h1, h2, h3, h4, h5, h6):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
+  color: #e2e8f0 !important;
+}
+
+.dark .prose a:not(:where([class~='not-prose'], [class~='not-prose'] *)) {
+  color: rgb(var(--mf-brand-rgb)) !important;
+}
