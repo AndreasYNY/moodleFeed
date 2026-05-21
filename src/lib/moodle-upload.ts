@@ -1,4 +1,4 @@
-import { moodleRequestUrl, withQuery } from './utils';
+import { moodleProxyHeaders, moodleRequestUrl, withQuery } from './utils';
 
 export async function uploadMoodleFile(baseUrl: string, token: string, file: File, itemId = 0) {
   const form = new FormData();
@@ -8,11 +8,14 @@ export async function uploadMoodleFile(baseUrl: string, token: string, file: Fil
   form.append('itemid', String(itemId));
   form.append('file', file);
 
+  const url = moodleRequestUrl(baseUrl, '/webservice/upload.php');
+  const isProxyUpload = url.startsWith('/api/moodle/');
   const response = await fetch(
-    withQuery(moodleRequestUrl(baseUrl, '/webservice/upload.php'), new URLSearchParams({ token })),
+    isProxyUpload ? url : withQuery(url, new URLSearchParams({ token })),
     {
-    method: 'POST',
-    body: form,
+      method: 'POST',
+      headers: isProxyUpload ? { 'X-Moodle-Token': token, ...moodleProxyHeaders(baseUrl) } : undefined,
+      body: form,
     },
   );
   const data = await response.json().catch(() => null);

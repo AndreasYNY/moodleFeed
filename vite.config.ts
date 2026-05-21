@@ -53,6 +53,17 @@ function sendJson(res: ServerResponse, status: number, payload: unknown) {
   res.end(JSON.stringify(payload));
 }
 
+function validHttpUrl(value: string | undefined) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined;
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return undefined;
+  }
+}
+
 async function handleMoodleBatch(req: IncomingMessage, res: ServerResponse, fallbackBaseUrl?: string) {
   try {
     if (req.method !== 'POST') {
@@ -63,7 +74,9 @@ async function handleMoodleBatch(req: IncomingMessage, res: ServerResponse, fall
     const body = await readJsonBody(req);
     const token = body.token;
     const calls = body.calls ?? [];
-    const baseUrl = new URL((fallbackBaseUrl || body.baseUrl || '').replace(/\/$/, ''));
+    const baseUrlValue = validHttpUrl(fallbackBaseUrl) ?? validHttpUrl(body.baseUrl);
+    if (!baseUrlValue) throw new Error('Missing or invalid Moodle base URL');
+    const baseUrl = new URL(baseUrlValue);
 
     if (!token) throw new Error('Missing token');
     if (!calls.length) throw new Error('Missing calls');
@@ -107,7 +120,7 @@ async function handleMoodleBatch(req: IncomingMessage, res: ServerResponse, fall
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const moodleBaseUrl = env.VITE_MOODLE_BASE_URL;
+  const moodleBaseUrl = validHttpUrl(env.VITE_MOODLE_BASE_URL);
 
   return {
     plugins: [

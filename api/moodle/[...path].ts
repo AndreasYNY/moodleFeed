@@ -76,6 +76,7 @@ function readBody(req: ProxyRequest) {
 function appendForwardedQuery(target: URL, query: Record<string, QueryValue>) {
   Object.entries(query).forEach(([key, value]) => {
     if (key === 'baseUrl' || key === 'path') return;
+    if (key === 'token' || key === 'wstoken') return;
     const values = Array.isArray(value) ? value : value === undefined ? [] : [value];
     values.forEach((item) => target.searchParams.append(key, item));
   });
@@ -94,10 +95,14 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
       return;
     }
 
-    const baseUrl = parseBaseUrl(firstQueryValue(req.query.baseUrl));
+    const baseUrl = parseBaseUrl(firstQueryValue(req.headers['x-moodle-base-url']) ?? firstQueryValue(req.query.baseUrl));
     const basePath = baseUrl.pathname.replace(/\/$/, '');
     const target = new URL(`${basePath}${path}`, baseUrl.origin);
     appendForwardedQuery(target, req.query);
+    const uploadToken = firstQueryValue(req.headers['x-moodle-token']);
+    if (path === '/webservice/upload.php' && uploadToken) {
+      target.searchParams.set('token', uploadToken);
+    }
 
     const headers = new Headers();
     const contentType = firstQueryValue(req.headers['content-type']);

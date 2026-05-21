@@ -55,10 +55,28 @@ export function moodleBasePath(baseUrl: string) {
 export function moodleRequestUrl(baseUrl: string, path: string) {
   const clean = baseUrl.replace(/\/$/, '');
   if (import.meta.env.DEV && import.meta.env.VITE_MOODLE_BASE_URL) return `/moodle${path}`;
-  if (import.meta.env.PROD && import.meta.env.VITE_MOODLE_PROXY !== 'direct') {
-    return `/api/moodle${path}?${new URLSearchParams({ baseUrl: clean }).toString()}`;
+  if (import.meta.env.PROD && import.meta.env.VITE_MOODLE_PROXY === 'vercel') {
+    return `/api/moodle${path}`;
   }
   return `${clean}${path}`;
+}
+
+export function normalizeMoodleBaseUrl(value: string) {
+  const url = new URL(value.trim());
+  if (url.username || url.password) throw new Error('Moodle URL cannot include credentials');
+  if (url.protocol !== 'https:' && !(import.meta.env.DEV && url.protocol === 'http:')) {
+    throw new Error('Moodle URL must use HTTPS');
+  }
+  url.hash = '';
+  url.search = '';
+  return url.toString().replace(/\/$/, '');
+}
+
+export function moodleProxyHeaders(baseUrl: string): Record<string, string> {
+  if (import.meta.env.PROD && import.meta.env.VITE_MOODLE_PROXY === 'vercel') {
+    return { 'X-Moodle-Base-Url': baseUrl.replace(/\/$/, '') };
+  }
+  return {};
 }
 
 export function withQuery(url: string, query: URLSearchParams) {

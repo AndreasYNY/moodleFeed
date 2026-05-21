@@ -1,5 +1,5 @@
 import type { Assignment, AssignmentSubmissionStatus, Course, Discussion, Forum, ForumPost, SiteInfo } from '../types';
-import { moodleRequestUrl, withQuery } from './utils';
+import { moodleProxyHeaders, moodleRequestUrl } from './utils';
 
 export class MoodleApiError extends Error {
   errorcode?: string;
@@ -55,12 +55,16 @@ async function parseMoodleResponse<T>(response: Response): Promise<T> {
 }
 
 export async function loginToMoodle(baseUrl: string, username: string, password: string) {
-  const params = new URLSearchParams({
+  const body = new URLSearchParams({
     username,
     password,
     service: 'moodle_mobile_app',
   });
-  const response = await fetch(withQuery(moodleRequestUrl(baseUrl, '/login/token.php'), params));
+  const response = await fetch(moodleRequestUrl(baseUrl, '/login/token.php'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...moodleProxyHeaders(baseUrl) },
+    body,
+  });
   return parseMoodleResponse<{ token: string; privatetoken?: string }>(response);
 }
 
@@ -70,16 +74,15 @@ export async function moodleCall<T>(
   fn: string,
   params: Record<string, unknown> = {},
 ) {
-  const query = new URLSearchParams({
-    wstoken: token,
-    wsfunction: fn,
-    moodlewsrestformat: 'json',
-  });
-
-  const response = await fetch(withQuery(moodleRequestUrl(baseUrl, '/webservice/rest/server.php'), query), {
+  const response = await fetch(moodleRequestUrl(baseUrl, '/webservice/rest/server.php'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: encodeParams(params),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...moodleProxyHeaders(baseUrl) },
+    body: encodeParams({
+      wstoken: token,
+      wsfunction: fn,
+      moodlewsrestformat: 'json',
+      ...params,
+    }),
   });
 
   return parseMoodleResponse<T>(response);
@@ -98,7 +101,7 @@ async function moodleBatchCall<T>(baseUrl: string, token: string, calls: Array<B
   if (!calls.length) return [];
 
   const shouldUseProxyBatch =
-    import.meta.env.VITE_MOODLE_PROXY !== 'direct' &&
+    import.meta.env.VITE_MOODLE_PROXY === 'vercel' &&
     (import.meta.env.PROD || (import.meta.env.DEV && import.meta.env.VITE_MOODLE_BASE_URL));
 
   if (shouldUseProxyBatch) {

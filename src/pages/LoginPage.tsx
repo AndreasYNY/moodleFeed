@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SquareLibrary } from 'lucide-react';
 import { loginToMoodle, Moodle } from '../lib/moodle';
+import { normalizeMoodleBaseUrl } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 
 export function LoginPage() {
@@ -18,7 +19,7 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+      const normalizedBaseUrl = normalizeMoodleBaseUrl(baseUrl);
       const auth = await loginToMoodle(normalizedBaseUrl, username, password);
       const siteInfo = await Moodle.siteInfo(normalizedBaseUrl, auth.token);
       login(normalizedBaseUrl, auth.token, siteInfo);
