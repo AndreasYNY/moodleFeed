@@ -5,6 +5,7 @@ import { AssignmentsPage } from './pages/AssignmentsPage';
 import { DiscussionPage } from './pages/DiscussionPage';
 import { ForumsPage } from './pages/ForumsPage';
 import { LoginPage } from './pages/LoginPage';
+import { MobileCallbackPage } from './pages/MobileCallbackPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { useAuthStore } from './store/auth';
 
@@ -27,6 +28,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/assignments" replace /> : <LoginPage />} />
+      <Route path="/mobile-callback" element={<MobileCallbackPage />} />
       <Route element={<AppLayout />}>
         <Route path="/assignments" element={<AssignmentsPage />} />
         <Route path="/forums" element={<ForumsPage />} />

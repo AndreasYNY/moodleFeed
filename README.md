@@ -21,6 +21,7 @@ Try it here: https://moodlefeed.vercel.app/ (Proxy is disabled)
 - Moodle submission status, grades, feedback, submitted files, and online text
 - Assignment brief rendering with Moodle attachments and inline image previews
 - File upload and online text submission support
+- Advanced Moodle mobile-link login support
 - Forum thread feed with reply status checks and dismissed discussion filters
 - Full discussion view with rendered Moodle HTML replies
 - Sticky TipTap forum composer with rich text controls
@@ -50,6 +51,8 @@ The app uses Moodle's standard web service endpoints:
 - `webservice/upload.php`
 
 Students sign in with their Moodle URL, username, and password. MoodleFeed stores the returned token locally in the browser through the persisted auth store.
+
+Advanced login also supports Moodle's mobile launch flow. Where supported, MoodleFeed can register a `web+moodlefeed` protocol handler and receive Moodle's mobile app token redirect. A paste fallback is available for `moodlemobile://token=...` links.
 
 ## Request Batching
 
