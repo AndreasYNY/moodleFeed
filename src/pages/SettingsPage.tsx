@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { Github, Trash2, Unplug } from 'lucide-react';
 import { KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn, initials } from '../lib/utils';
@@ -212,9 +213,31 @@ export function SettingsPage() {
           <section id="privacy" className="mf-card space-y-3 border-red-200">
             <h2 className="text-base font-semibold text-red-700">Danger zone</h2>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => { auth.logout(); navigate('/login', { replace: true }); }} className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white">Disconnect</button>
-              <button onClick={() => { queryClient.clear(); localStorage.clear(); auth.logout(); navigate('/login', { replace: true }); }} className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">Clear cache</button>
+              <button onClick={() => { auth.logout(); navigate('/login', { replace: true }); }} className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white">
+                <Unplug className="h-4 w-4" />
+                Disconnect
+              </button>
+              <button onClick={() => { queryClient.clear(); localStorage.clear(); auth.logout(); navigate('/login', { replace: true }); }} className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">
+                <Trash2 className="h-4 w-4" />
+                Clear cache
+              </button>
             </div>
+          </section>
+
+          <section className="mf-card space-y-3">
+            <h2 className="text-base font-semibold text-slate-950">Project</h2>
+            <a
+              href="https://github.com/AndreasYNY/moodleFeed"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <span className="inline-flex items-center gap-2">
+                <Github className="h-4 w-4" />
+                View MoodleFeed on GitHub
+              </span>
+              <span className="text-xs text-slate-400">github.com/AndreasYNY/moodleFeed</span>
+            </a>
           </section>
         </div>
       </main>
