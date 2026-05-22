@@ -159,6 +159,9 @@ export default defineConfig(({ mode }) => {
             if (id.includes('/node_modules/@tanstack/')) {
               return 'vendor-query';
             }
+            if (id.includes('/node_modules/@fullcalendar/')) {
+              return 'vendor-calendar';
+            }
             if (id.includes('/node_modules/lucide-react/')) {
               return 'vendor-icons';
             }

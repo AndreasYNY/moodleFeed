@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { NotificationsBridge } from './components/NotificationsBridge';
 import { Sidebar } from './components/Sidebar';
 import { AssignmentsPage } from './pages/AssignmentsPage';
+import { CalendarPage } from './pages/CalendarPage';
 import { DiscussionPage } from './pages/DiscussionPage';
 import { ForumsPage } from './pages/ForumsPage';
 import { LoginPage } from './pages/LoginPage';
@@ -31,6 +32,7 @@ export function App() {
       <Route path="/mobile-callback" element={<MobileCallbackPage />} />
       <Route element={<AppLayout />}>
         <Route path="/assignments" element={<AssignmentsPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/forums" element={<ForumsPage />} />
         <Route path="/forums/:discussionId" element={<DiscussionPage />} />
         <Route path="/settings" element={<SettingsPage />} />

@@ -1,6 +1,13 @@
 import { clsx, type ClassValue } from 'clsx';
 
 const courseColors = ['#7C3AED', '#0F766E', '#EA5B0C', '#2563EB', '#DB2777'];
+const courseColorTokens = [
+  { dot: '#7C3AED', light: '#F3E8FF', text: '#6D28D9' },
+  { dot: '#0F766E', light: '#CCFBF1', text: '#0F766E' },
+  { dot: '#EA5B0C', light: '#FFF1EA', text: '#C2410C' },
+  { dot: '#2563EB', light: '#DBEAFE', text: '#1D4ED8' },
+  { dot: '#DB2777', light: '#FCE7F3', text: '#BE185D' },
+];
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -8,6 +15,10 @@ export function cn(...inputs: ClassValue[]) {
 
 export function courseColor(courseId: number) {
   return courseColors[Math.abs(courseId) % courseColors.length];
+}
+
+export function getCourseColor(courseId: number) {
+  return courseColorTokens[Math.abs(courseId) % courseColorTokens.length];
 }
 
 export function stripHtml(html = '') {

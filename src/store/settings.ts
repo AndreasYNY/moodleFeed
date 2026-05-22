@@ -4,7 +4,7 @@ import type { SyncInterval } from '../types';
 
 type SettingValueKey = keyof Omit<
   SettingsState,
-  'setSetting' | 'dismissDiscussion' | 'restoreDiscussion' | 'clearDismissedDiscussions'
+  'setSetting' | 'dismissDiscussion' | 'restoreDiscussion' | 'clearDismissedDiscussions' | 'toggleHiddenCourse'
 >;
 
 interface SettingsState {
@@ -20,10 +20,12 @@ interface SettingsState {
   forumNameFilters: string[];
   forumPromptTemplate: string;
   dismissedDiscussionIds: number[];
+  hiddenCourseIds: number[];
   setSetting: <K extends SettingValueKey>(key: K, value: SettingsState[K]) => void;
   dismissDiscussion: (discussionId: number) => void;
   restoreDiscussion: (discussionId: number) => void;
   clearDismissedDiscussions: () => void;
+  toggleHiddenCourse: (courseId: number) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -41,6 +43,7 @@ export const useSettingsStore = create<SettingsState>()(
       forumNameFilters: [],
       forumPromptTemplate: '',
       dismissedDiscussionIds: [],
+      hiddenCourseIds: [],
       setSetting: (key, value) => set({ [key]: value } as Partial<SettingsState>),
       dismissDiscussion: (discussionId) =>
         set((state) => ({
@@ -53,6 +56,12 @@ export const useSettingsStore = create<SettingsState>()(
           dismissedDiscussionIds: state.dismissedDiscussionIds.filter((id) => id !== discussionId),
         })),
       clearDismissedDiscussions: () => set({ dismissedDiscussionIds: [] }),
+      toggleHiddenCourse: (courseId) =>
+        set((state) => ({
+          hiddenCourseIds: state.hiddenCourseIds.includes(courseId)
+            ? state.hiddenCourseIds.filter((id) => id !== courseId)
+            : [...state.hiddenCourseIds, courseId],
+        })),
     }),
     { name: 'moodlefeed-settings' },
   ),

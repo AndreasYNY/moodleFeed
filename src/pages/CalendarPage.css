@@ -1,0 +1,86 @@
+.moodle-calendar .fc {
+  --fc-border-color: rgba(148, 163, 184, 0.28);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--color-background-secondary, #f8fafc);
+  font-family: var(--font-sans);
+  height: 100%;
+}
+
+.moodle-calendar .fc .fc-scroller {
+  overflow: auto;
+}
+
+.moodle-calendar .fc-day-today {
+  background: #fffcfa !important;
+}
+
+.moodle-calendar .fc-day-today .fc-daygrid-day-number {
+  align-items: center;
+  background: var(--accent, var(--mf-brand));
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.moodle-calendar .fc-timegrid-now-indicator-line {
+  border-color: var(--accent, var(--mf-brand)) !important;
+}
+
+.moodle-calendar .fc-timegrid-now-indicator-arrow {
+  border-top-color: var(--accent, var(--mf-brand)) !important;
+}
+
+.moodle-calendar .fc-col-header-cell-cushion,
+.moodle-calendar .fc-daygrid-day-number {
+  color: var(--color-text-primary, #0f172a);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.moodle-calendar .fc-event {
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.moodle-calendar .fc-daygrid-event {
+  border-left-width: 3px !important;
+  margin-inline: 4px;
+}
+
+.moodle-calendar .fc-daygrid-more-link {
+  color: var(--color-text-tertiary, #64748b);
+  font-size: 11px;
+}
+
+.moodle-calendar .fc th {
+  border-color: var(--color-border-tertiary, rgba(148, 163, 184, 0.28));
+  color: var(--color-text-tertiary, #64748b);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.moodle-calendar .fc td,
+.moodle-calendar .fc-scrollgrid {
+  border-color: var(--color-border-tertiary, rgba(148, 163, 184, 0.28)) !important;
+}
+
+.moodle-calendar .fc-list-event:hover td {
+  background: var(--color-background-secondary, #f8fafc);
+}
+
+.moodle-calendar .fc-list-day-cushion {
+  background: var(--color-background-secondary, #f8fafc) !important;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.moodle-calendar .fc-theme-standard .fc-scrollgrid {
+  border: 0;
+}
