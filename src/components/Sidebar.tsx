@@ -55,7 +55,7 @@ export function Sidebar() {
                     'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[11px] font-medium text-slate-600 transition hover:bg-slate-50',
                     hidden && 'opacity-40',
                   )}
-                  title={hidden ? 'Show course on calendar' : 'Hide course on calendar'}
+                  title={hidden ? 'Show course in feeds' : 'Hide course from feeds'}
                 >
                   <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
                   <span className="truncate">{course.shortname || course.fullname}</span>

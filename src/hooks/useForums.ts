@@ -8,8 +8,9 @@ import { useCourses } from './useCourses';
 
 export function useForums() {
   const { baseUrl, token, userId } = useAuthStore();
-  const { forumNameFilters, dismissedDiscussionIds } = useSettingsStore();
+  const { forumNameFilters, dismissedDiscussionIds, hiddenCourseIds } = useSettingsStore();
   const coursesQuery = useCourses();
+  const hiddenCourseIdSet = new Set(hiddenCourseIds);
   const courses = coursesQuery.data ?? [];
   const courseIds = courses.map((course) => course.id);
 
@@ -60,16 +61,16 @@ export function useForums() {
   const baseThreads = allThreads.filter((discussion) => {
     const discussionId = discussion.discussion ?? discussion.id;
     const discussionName = `${discussion.name ?? ''} ${discussion.subject ?? ''}`;
+    if (hiddenCourseIdSet.has(discussion.courseId)) return false;
     if (dismissedIds.has(discussionId)) return false;
     return !compiledNameFilters.some((filter) => filter.test(discussionName));
   });
 
   const allDiscussionIds = allThreads.map((thread) => thread.discussion ?? thread.id);
-  const discussionIds = baseThreads.map((thread) => thread.discussion ?? thread.id);
   const postStatusesQuery = useQuery({
     queryKey: ['posts-batch', allDiscussionIds],
-    queryFn: () => Moodle.postsBatch(baseUrl!, token!, discussionIds),
-    enabled: Boolean(baseUrl && token && userId && discussionIds.length),
+    queryFn: () => Moodle.postsBatch(baseUrl!, token!, allDiscussionIds),
+    enabled: Boolean(baseUrl && token && userId && allDiscussionIds.length),
     staleTime: 5 * 60 * 1000,
   });
   const postsByDiscussion = new Map(

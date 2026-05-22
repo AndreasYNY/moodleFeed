@@ -2,12 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Moodle } from '../lib/moodle';
 import { courseColor } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
+import { useSettingsStore } from '../store/settings';
 import type { AssignmentSubmissionFile, AssignmentSubmissionStatus, AssignmentWithCourse, Course } from '../types';
 import { useCourses } from './useCourses';
 
 export function useAssignments() {
   const { baseUrl, token, userId } = useAuthStore();
+  const hiddenCourseIds = useSettingsStore((state) => state.hiddenCourseIds);
   const coursesQuery = useCourses();
+  const hiddenCourseIdSet = new Set(hiddenCourseIds);
   const courses = coursesQuery.data ?? [];
   const courseIds = courses.map((course) => course.id);
 
@@ -81,9 +84,12 @@ export function useAssignments() {
     };
   });
 
+  const sortedAssignments = assignments.sort((a, b) => (a.duedate || Number.MAX_SAFE_INTEGER) - (b.duedate || Number.MAX_SAFE_INTEGER));
+
   return {
     ...assignmentsQuery,
-    data: assignments.sort((a, b) => (a.duedate || Number.MAX_SAFE_INTEGER) - (b.duedate || Number.MAX_SAFE_INTEGER)),
+    data: sortedAssignments.filter((assignment) => !hiddenCourseIdSet.has(assignment.course)),
+    allData: sortedAssignments,
     isLoading: coursesQuery.isLoading || assignmentsQuery.isLoading || completionsQuery.isLoading || submissionStatusesQuery.isLoading,
     error:
       coursesQuery.error ||

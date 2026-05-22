@@ -46,7 +46,7 @@ export function NotificationsBridge() {
   const addNotification = useNotificationsStore((state) => state.addNotification);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const assignments = useMemo(() => assignmentsQuery.data ?? [], [assignmentsQuery.data]);
+  const assignments = useMemo(() => assignmentsQuery.allData ?? assignmentsQuery.data ?? [], [assignmentsQuery.allData, assignmentsQuery.data]);
   const threads = useMemo(() => forumsQuery.data ?? [], [forumsQuery.data]);
 
   const currentAssignmentIds = useMemo(() => assignments.map((assignment) => assignment.id), [assignments]);
