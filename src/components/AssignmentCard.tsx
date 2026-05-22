@@ -29,7 +29,7 @@ import {
   UploadCloud,
   X,
 } from 'lucide-react';
-import { DragEvent, useMemo, useRef, useState } from 'react';
+import { DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Moodle } from '../lib/moodle';
 import { uploadMoodleFile } from '../lib/moodle-upload';
@@ -67,6 +67,7 @@ interface AssignmentCardProps {
   assignment: Assignment | LegacyAssignment;
   onSubmitFile?: (assignmentId: number, file: File) => Promise<void>;
   onSubmitText?: (assignmentId: number, html: string) => Promise<void>;
+  defaultExpanded?: boolean;
 }
 
 type LegacyAssignment = Partial<Assignment> & {
@@ -330,18 +331,22 @@ function AttachmentList({ files, token }: { files?: SubmittedFile[]; token: stri
   );
 }
 
-export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubmitText }: AssignmentCardProps) {
+export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubmitText, defaultExpanded = false }: AssignmentCardProps) {
   const assignment = useMemo(() => normalizeAssignment(rawAssignment), [rawAssignment]);
   const courseColor = getCourseColor(assignment.courseId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { baseUrl, token } = useAuthStore();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [dragging, setDragging] = useState(false);
   const submitted = assignment.status === 'completed';
   const youtubeLinks = extractYouTubeLinks(assignment.submittedText ?? '');
+
+  useEffect(() => {
+    if (defaultExpanded) setExpanded(true);
+  }, [defaultExpanded]);
 
   const editor = useEditor({
     extensions: [
@@ -418,7 +423,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
   }
 
   return (
-    <article className="overflow-hidden rounded-xl border border-slate-200/80 bg-white">
+    <article id={`assignment-${assignment.id}`} className="overflow-hidden rounded-xl border border-slate-200/80 bg-white">
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <button type="button" onClick={() => setExpanded((value) => !value)} className="min-w-0 flex-1 text-left">

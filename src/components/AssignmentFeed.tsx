@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAssignments } from '../hooks/useAssignments';
 import { useAuthErrorRedirect } from '../hooks/auth-guard';
 import type { AssignmentWithCourse } from '../types';
@@ -20,10 +21,23 @@ const groups = ['Overdue', 'Due soon', 'Upcoming', 'Completed'] as const;
 const filters = ['All', 'Overdue', 'Due soon', 'Done'] as const;
 
 export function AssignmentFeed() {
+  const [searchParams] = useSearchParams();
+  const focusedAssignmentId = useMemo(() => Number(searchParams.get('assignment')), [searchParams]);
   const [filter, setFilter] = useState<(typeof filters)[number]>('All');
   const [sort, setSort] = useState('due');
   const query = useAssignments();
   useAuthErrorRedirect(query.error);
+
+  useEffect(() => {
+    if (focusedAssignmentId) setFilter('All');
+  }, [focusedAssignmentId]);
+
+  useEffect(() => {
+    if (!focusedAssignmentId || query.isLoading) return;
+    requestAnimationFrame(() => {
+      document.getElementById(`assignment-${focusedAssignmentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }, [focusedAssignmentId, query.isLoading]);
 
   if (query.isLoading) {
     return <div className="space-y-3">{Array.from({ length: 5 }, (_, index) => <SkeletonCard key={index} />)}</div>;
@@ -73,7 +87,12 @@ export function AssignmentFeed() {
           <section key={group} className="space-y-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{group}</h2>
             {items.map((assignment) => (
-              <AssignmentCard key={`${assignment.course}-${assignment.id}`} assignment={assignment} />
+              <div
+                key={`${assignment.course}-${assignment.id}`}
+                className={assignment.id === focusedAssignmentId ? 'rounded-xl ring-2 ring-brand ring-offset-2' : undefined}
+              >
+                <AssignmentCard assignment={assignment} defaultExpanded={assignment.id === focusedAssignmentId} />
+              </div>
             ))}
           </section>
         );
