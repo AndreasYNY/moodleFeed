@@ -5,8 +5,10 @@ import LinkExtension from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Bold, Heading2, Heading3, Italic, Link, List, ListOrdered, Maximize2, Quote, Sparkles, Underline as UnderlineIcon } from 'lucide-react';
 import { useState } from 'react';
-import { buildClaudePrompt, defaultClaudePromptTemplate, type DiscussionContext } from '../lib/prompt-builder';
+import { getAiProvider } from '../lib/ai-providers';
+import { buildAiPrompt, defaultAiPromptTemplate, type DiscussionContext } from '../lib/prompt-builder';
 import { useSettingsStore } from '../store/settings';
+import { AIPromptModal } from './AIPromptModal';
 
 export function ForumComposer({
   onPost,
@@ -15,9 +17,12 @@ export function ForumComposer({
   onPost: (html: string) => Promise<void>;
   context: DiscussionContext;
 }) {
-  const [toast, setToast] = useState('');
   const [fullscreen, setFullscreen] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [assembledPrompt, setAssembledPrompt] = useState('');
   const forumPromptTemplate = useSettingsStore((state) => state.forumPromptTemplate);
+  const aiProviderId = useSettingsStore((state) => state.aiProvider);
+  const aiProvider = getAiProvider(aiProviderId);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -51,8 +56,14 @@ export function ForumComposer({
     },
   ];
 
+  function generateWithAi() {
+    const prompt = buildAiPrompt(context, forumPromptTemplate || defaultAiPromptTemplate);
+    setAssembledPrompt(prompt);
+    setShowAiModal(true);
+  }
+
   return (
-    <div className={fullscreen ? 'fixed inset-3 z-50 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 shadow-2xl md:inset-4 md:p-4' : 'sticky bottom-16 z-20 border-t border-slate-200 bg-white p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.06)] md:bottom-0 md:p-4'}>
+    <div className={fullscreen ? 'fixed inset-3 z-50 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 shadow-2xl md:inset-4 md:p-4' : 'sticky bottom-16 z-20 border-t border-slate-200 bg-white p-3 shadow-soft md:bottom-0 md:p-4'}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 md:gap-3">
         <div className="flex min-w-0 flex-wrap gap-1">
           {toolbar.map((item) => (
@@ -65,17 +76,12 @@ export function ForumComposer({
           </button>
         </div>
         <button
-          onClick={async () => {
-            await navigator.clipboard.writeText(buildClaudePrompt(context, forumPromptTemplate || defaultClaudePromptTemplate));
-            window.open('https://claude.ai', '_blank', 'noopener,noreferrer');
-            setToast('Prompt copied!');
-            window.setTimeout(() => setToast(''), 2200);
-          }}
+          onClick={generateWithAi}
           className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-active px-3 py-2 text-sm font-semibold text-brand"
         >
           <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">Generate with Claude</span>
-          <span className="sm:hidden">Claude</span>
+          <span className="hidden sm:inline">Generate with {aiProvider.name}</span>
+          <span className="sm:hidden">{aiProvider.name}</span>
         </button>
       </div>
       <div className="rounded-lg border border-slate-200 px-3 py-2">
@@ -98,7 +104,15 @@ export function ForumComposer({
           </button>
         </div>
       </div>
-      {toast && <div className="absolute right-4 top-4 rounded-lg bg-slate-950 px-3 py-2 text-sm text-white">{toast}</div>}
+      <AIPromptModal
+        isOpen={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        prompt={assembledPrompt}
+        threadTitle={context.forumName}
+        courseName={context.courseFullName}
+        providerName={aiProvider.name}
+        providerUrl={aiProvider.url}
+      />
     </div>
   );
 }

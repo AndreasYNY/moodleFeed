@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { AiProviderId } from '../lib/ai-providers';
 import type { SyncInterval } from '../types';
 
 type SettingValueKey = keyof Omit<
@@ -19,6 +20,7 @@ interface SettingsState {
   notifyBrowser: boolean;
   forumNameFilters: string[];
   forumPromptTemplate: string;
+  aiProvider: AiProviderId;
   dismissedDiscussionIds: number[];
   hiddenCourseIds: number[];
   setSetting: <K extends SettingValueKey>(key: K, value: SettingsState[K]) => void;
@@ -42,6 +44,7 @@ export const useSettingsStore = create<SettingsState>()(
       notifyBrowser: false,
       forumNameFilters: [],
       forumPromptTemplate: '',
+      aiProvider: 'claude',
       dismissedDiscussionIds: [],
       hiddenCourseIds: [],
       setSetting: (key, value) => set({ [key]: value } as Partial<SettingsState>),

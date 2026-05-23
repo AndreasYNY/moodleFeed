@@ -25,7 +25,7 @@ Try it here: https://moodlefeed.vercel.app/ (Proxy is disabled)
 - Forum thread feed with reply status checks and dismissed discussion filters
 - Full discussion view with rendered Moodle HTML replies
 - Sticky TipTap forum composer with rich text controls
-- Claude prompt generation for forum replies
+- AI prompt generation for forum replies, with Claude, Gemini, ChatGPT, Kimi, DeepSeek, and Perplexity options
 - Settings for notifications, appearance, sync interval, forum filters, and prompt template
 - In-app notification inbox
 - Dynamic light/dark theme and accent color support

@@ -21,7 +21,7 @@ function clean(body: string) {
   return stripHtml(body);
 }
 
-export const defaultClaudePromptTemplate = `Help me write a Moodle forum reply. Use the course and forum context below, but do not mention that you are using a prompt, brief, evidence hierarchy, or drafting process.
+export const defaultAiPromptTemplate = `Help me write a Moodle forum reply. Use the course and forum context below, but do not mention that you are using a prompt, brief, evidence hierarchy, or drafting process.
 Write like a real student: direct, natural, and specific. Avoid generic AI phrasing and avoid opening or closing paragraphs with filler transitions such as "Secara umum", "Dengan kata lain", "Pada dasarnya", "Intinya", "Jadi", or "Oleh karena itu".
 
 Requirements:
@@ -51,7 +51,7 @@ Tutor/teacher context:
 Student replies (context only — do not mirror their structure or examples):
 {studentContext}`;
 
-export function buildClaudePrompt(ctx: DiscussionContext, template = defaultClaudePromptTemplate): string {
+export function buildAiPrompt(ctx: DiscussionContext, template = defaultAiPromptTemplate): string {
   const tutorContext = ctx.tutorPosts.map((p) => `${p.authorName}: ${clean(p.body)}`).join('\n\n');
   const studentContext = ctx.studentPosts
     .map((p) => `- ${p.authorName}: ${clean(p.body).slice(0, 300)}...`)
@@ -70,6 +70,6 @@ export function buildClaudePrompt(ctx: DiscussionContext, template = defaultClau
 
   return Object.entries(replacements).reduce(
     (prompt, [key, value]) => prompt.split(`{${key}}`).join(value),
-    template || defaultClaudePromptTemplate,
+    template || defaultAiPromptTemplate,
   );
 }
