@@ -84,3 +84,23 @@
 .moodle-calendar .fc-theme-standard .fc-scrollgrid {
   border: 0;
 }
+
+.calendar-layout {
+  grid-template-columns: minmax(0, 1fr) var(--panel-width);
+}
+
+@media (max-width: 767px) {
+  .calendar-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(420px, 1fr) auto;
+  }
+
+  .moodle-calendar .fc {
+    font-size: 12px;
+  }
+
+  .moodle-calendar .fc-col-header-cell-cushion,
+  .moodle-calendar .fc-daygrid-day-number {
+    font-size: 11px;
+  }
+}

@@ -52,9 +52,9 @@ export function ForumComposer({
   ];
 
   return (
-    <div className={fullscreen ? 'fixed inset-4 z-50 rounded-xl border border-slate-200 bg-white p-4 shadow-2xl' : 'sticky bottom-0 z-20 border-t border-slate-200 bg-white p-4 shadow-[0_-10px_30px_rgba(15,23,42,0.06)]'}>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1">
+    <div className={fullscreen ? 'fixed inset-3 z-50 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 shadow-2xl md:inset-4 md:p-4' : 'sticky bottom-16 z-20 border-t border-slate-200 bg-white p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.06)] md:bottom-0 md:p-4'}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 md:gap-3">
+        <div className="flex min-w-0 flex-wrap gap-1">
           {toolbar.map((item) => (
             <button key={item.label} onClick={item.action} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50" title={item.label}>
               <item.icon className="h-4 w-4" />
@@ -71,16 +71,17 @@ export function ForumComposer({
             setToast('Prompt copied!');
             window.setTimeout(() => setToast(''), 2200);
           }}
-          className="inline-flex items-center gap-2 rounded-lg bg-active px-3 py-2 text-sm font-semibold text-brand"
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-active px-3 py-2 text-sm font-semibold text-brand"
         >
           <Sparkles className="h-4 w-4" />
-          Generate with Claude
+          <span className="hidden sm:inline">Generate with Claude</span>
+          <span className="sm:hidden">Claude</span>
         </button>
       </div>
       <div className="rounded-lg border border-slate-200 px-3 py-2">
         <EditorContent editor={editor} />
       </div>
-      <div className="mt-3 flex items-center justify-between gap-3">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <span className="text-xs text-slate-500">{text.length} characters</span>
         <div className="flex gap-2">
           <button onClick={() => editor?.commands.clearContent()} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600">

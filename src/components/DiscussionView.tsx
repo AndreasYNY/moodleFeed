@@ -105,12 +105,12 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
 
   return (
     <div className="flex min-h-[calc(100vh-56px)] flex-col">
-      <div className="flex-1 space-y-4 p-4 md:p-6">
+      <div className="flex-1 space-y-4 p-3 md:p-6">
         <article className="mf-card border-brand/25">
-          <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-2 text-xs font-semibold text-brand">Thread prompt</div>
-              <h2 className="text-lg font-semibold text-slate-950">{promptPost.subject ?? thread?.name}</h2>
+              <h2 className="break-words text-base font-semibold text-slate-950 md:text-lg">{promptPost.subject ?? thread?.name}</h2>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <a
@@ -138,12 +138,12 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
             const author = post.author?.fullname ?? post.userfullname ?? 'Unknown';
             return (
               <article id={`post-${post.id}`} key={post.id} className={`mf-card scroll-mt-20 ${tutor ? 'border-l-4 border-l-brand' : ''}`}>
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700">{initials(author)}</div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-950">{author}</span>
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700">{initials(author)}</div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="break-words text-sm font-semibold text-slate-950">{author}</span>
                         {mine && (
                           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                             You
@@ -225,7 +225,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
       {myFirstReply && (
         <button
           onClick={scrollToMyAnswer}
-          className="fixed bottom-[300px] right-4 z-30 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-700 md:right-6"
+          className="fixed bottom-[440px] right-4 z-30 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-700 md:bottom-[300px] md:right-6"
         >
           My answer
         </button>

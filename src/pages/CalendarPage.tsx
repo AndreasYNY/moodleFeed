@@ -9,9 +9,7 @@ import { format, formatDistanceToNow, isSameDay } from 'date-fns';
 import { MouseEvent, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssignments } from '../hooks/useAssignments';
-import { useCourses } from '../hooks/useCourses';
-import { cn, getCourseColor } from '../lib/utils';
-import { useSettingsStore } from '../store/settings';
+import { getCourseColor } from '../lib/utils';
 import type { AssignmentWithCourse } from '../types';
 import './CalendarPage.css';
 
@@ -104,19 +102,11 @@ export function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [panelWidth, setPanelWidth] = useState(260);
   const assignmentsQuery = useAssignments();
-  const coursesQuery = useCourses();
-  const { hiddenCourseIds, toggleHiddenCourse } = useSettingsStore();
-  const hiddenCourseIdSet = useMemo(() => new Set(hiddenCourseIds), [hiddenCourseIds]);
   const assignments = useMemo(() => assignmentsQuery.data ?? [], [assignmentsQuery.data]);
-
-  const visibleAssignments = useMemo(
-    () => assignments.filter((assignment) => !hiddenCourseIdSet.has(assignment.course)),
-    [assignments, hiddenCourseIdSet],
-  );
 
   const calendarEvents = useMemo<CalendarEvent[]>(
     () =>
-      visibleAssignments.flatMap((assignment) => {
+      assignments.flatMap((assignment) => {
         const dueDate = assignmentDueDate(assignment);
         if (!dueDate) return [];
         const colors = getEventColors(assignment);
@@ -136,12 +126,11 @@ export function CalendarPage() {
           },
         }];
       }),
-    [visibleAssignments],
+    [assignments],
   );
 
   const selectedEvents = useMemo(() => eventsForDate(calendarEvents, selectedDate), [calendarEvents, selectedDate]);
   const overdueCount = assignments.filter((assignment) => assignmentStatus(assignment) === 'overdue').length;
-  const courses = coursesQuery.data ?? [];
 
   function changeView(view: CalendarView) {
     setActiveView(view);
@@ -189,19 +178,19 @@ export function CalendarPage() {
   }
 
   return (
-    <main className="flex h-screen min-h-0 flex-col bg-slate-50">
-      <div className="flex h-[52px] shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-4">
+    <main className="flex min-h-[calc(100vh-4rem)] flex-col bg-slate-50 md:h-screen md:min-h-0">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-3 py-2 md:h-[52px] md:flex-nowrap md:px-4 md:py-0">
         <button type="button" onClick={() => calendarRef.current?.getApi().prev()} className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
           <ChevronLeft className="h-4 w-4" />
         </button>
         <button type="button" onClick={() => calendarRef.current?.getApi().next()} className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
           <ChevronRight className="h-4 w-4" />
         </button>
-        <div className="ml-2 text-[15px] font-medium text-slate-950">{formatRange(dateSet)}</div>
+        <div className="min-w-0 flex-1 text-[15px] font-medium text-slate-950 md:ml-2">{formatRange(dateSet)}</div>
         <button type="button" onClick={() => calendarRef.current?.getApi().today()} className="ml-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
           Today
         </button>
-        <div className="flex-1" />
+        <div className="hidden flex-1 md:block" />
         {overdueCount > 0 && (
           <div className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#A32D2D]">
             <AlertCircle className="h-3.5 w-3.5" />
@@ -231,8 +220,8 @@ export function CalendarPage() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1" style={{ gridTemplateColumns: `minmax(0, 1fr) ${panelWidth}px` }}>
-        <section className="moodle-calendar min-h-0 bg-white p-4">
+      <div className="calendar-layout grid min-h-0 flex-1" style={{ '--panel-width': `${panelWidth}px` } as React.CSSProperties}>
+        <section className="moodle-calendar min-h-[420px] bg-white p-2 md:min-h-0 md:p-4">
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
@@ -250,13 +239,13 @@ export function CalendarPage() {
           />
         </section>
 
-        <aside className="relative flex min-h-0 flex-col border-l border-slate-200 bg-white">
+        <aside className="relative flex min-h-0 flex-col border-t border-slate-200 bg-white md:border-l md:border-t-0">
           <div
             role="separator"
             aria-orientation="vertical"
             title="Resize details panel"
             onMouseDown={startResize}
-            className="absolute inset-y-0 left-0 z-10 w-2 -translate-x-1 cursor-col-resize"
+            className="absolute inset-y-0 left-0 z-10 hidden w-2 -translate-x-1 cursor-col-resize md:block"
           />
           <div className="border-b border-slate-200 p-4">
             <div className="text-sm font-semibold text-slate-950">{format(selectedDate, 'EEEE, MMMM d')}</div>
@@ -302,26 +291,6 @@ export function CalendarPage() {
                 </button>
               );
             })}
-          </div>
-          <div className="border-t border-slate-200 p-3">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Courses</div>
-            <div className="space-y-1.5">
-              {courses.map((course) => {
-                const color = getCourseColor(course.id);
-                const hidden = hiddenCourseIdSet.has(course.id);
-                return (
-                  <button
-                    key={course.id}
-                    type="button"
-                    onClick={() => toggleHiddenCourse(course.id)}
-                    className={cn('flex w-full items-center gap-2 rounded-md px-1 py-1 text-left text-[11px] text-slate-600 hover:bg-slate-50', hidden && 'opacity-40')}
-                  >
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color.dot }} />
-                    <span className="truncate">{course.fullname}</span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </aside>
       </div>

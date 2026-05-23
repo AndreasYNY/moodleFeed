@@ -26,10 +26,10 @@ export function SettingsPage() {
   return (
     <>
       <Topbar title="Settings" breadcrumb="Preferences" />
-      <main className="mx-auto grid max-w-6xl gap-6 p-4 md:grid-cols-[220px_1fr] md:p-6">
-        <nav className="h-fit rounded-xl border border-slate-200 bg-white p-2 text-sm font-medium text-slate-600">
+      <main className="mx-auto grid max-w-6xl gap-4 p-3 md:grid-cols-[220px_1fr] md:gap-6 md:p-6">
+        <nav className="sticky top-14 z-10 flex h-fit flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-2 text-sm font-medium text-slate-600 md:top-20 md:block">
           {['Profile', 'Moodle connection', 'Notifications', 'Forums', 'Appearance', 'Sync', 'Privacy'].map((item) => (
-            <a key={item} href={`#${item.toLowerCase().replace(/\s+/g, '-')}`} className="block rounded-lg px-3 py-2 hover:bg-slate-50">
+            <a key={item} href={`#${item.toLowerCase().replace(/\s+/g, '-')}`} className="block shrink-0 rounded-lg px-3 py-2 hover:bg-slate-50">
               {item}
             </a>
           ))}
@@ -38,10 +38,10 @@ export function SettingsPage() {
           <section id="profile" className="mf-card">
             <h2 className="mb-4 text-base font-semibold text-slate-950">Profile</h2>
             <div className="flex items-center gap-4">
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-brand text-sm font-semibold text-white">{initials(auth.userFullName)}</div>
-              <div>
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-brand text-sm font-semibold text-white">{initials(auth.userFullName)}</div>
+              <div className="min-w-0">
                 <div className="font-semibold text-slate-950">{auth.userFullName}</div>
-                <div className="text-sm text-slate-500">{auth.userEmail || 'No email from Moodle'}</div>
+                <div className="break-words text-sm text-slate-500">{auth.userEmail || 'No email from Moodle'}</div>
                 <div className="text-sm text-slate-500">Student ID: {auth.userId}</div>
               </div>
             </div>
@@ -50,7 +50,7 @@ export function SettingsPage() {
           <section id="moodle-connection" className="mf-card">
             <h2 className="mb-3 text-base font-semibold text-slate-950">Moodle connection</h2>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="text-sm text-slate-600">{auth.baseUrl}</span>
+              <span className="min-w-0 break-all text-sm text-slate-600">{auth.baseUrl}</span>
               <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Connected</span>
             </div>
           </section>
@@ -151,7 +151,7 @@ export function SettingsPage() {
                 value={settings.forumPromptTemplate || defaultClaudePromptTemplate}
                 onKeyDown={stopEnterPropagation}
                 onChange={(event) => settings.setSetting('forumPromptTemplate', event.target.value)}
-                className="mf-focus mt-1 min-h-96 w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-xs"
+                className="mf-focus mt-1 min-h-72 w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-xs md:min-h-96"
               />
             </label>
             <p className="text-xs text-slate-500">
@@ -230,13 +230,13 @@ export function SettingsPage() {
               href="https://github.com/AndreasYNY/moodleFeed"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <span className="inline-flex items-center gap-2">
                 <Github className="h-4 w-4" />
                 View MoodleFeed on GitHub
               </span>
-              <span className="text-xs text-slate-400">github.com/AndreasYNY/moodleFeed</span>
+              <span className="break-all text-xs text-slate-400">github.com/AndreasYNY/moodleFeed</span>
             </a>
           </section>
         </div>

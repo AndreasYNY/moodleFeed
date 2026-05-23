@@ -96,7 +96,7 @@ export function ForumFeed() {
                         <span className="truncate">{thread.courseName}</span>
                         {thread.courseShortName && <span className="shrink-0 text-slate-400">· {thread.courseShortName}</span>}
                       </div>
-                      <h2 className="text-base font-semibold text-slate-950">{thread.name || thread.subject}</h2>
+                      <h2 className="break-words text-base font-semibold text-slate-950">{thread.name || thread.subject}</h2>
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                         <span>Last by {thread.userfullname || 'Unknown'}</span>
                         {thread.timemodified && <span>{formatDistanceToNow(thread.timemodified * 1000, { addSuffix: true })}</span>}
@@ -135,7 +135,7 @@ export function ForumFeed() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center gap-2">
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
                       <MessageCircle className="h-3.5 w-3.5" />
                       {thread.numreplies ?? 0} replies

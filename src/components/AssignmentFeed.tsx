@@ -98,8 +98,8 @@ export function AssignmentFeed() {
         );
       })}
 
-      <div className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:left-[220px]">
-        <div className="mx-auto flex max-w-5xl justify-between text-xs font-medium text-slate-600">
+      <div className="fixed bottom-16 left-0 right-0 border-t border-slate-200 bg-white/95 px-3 py-2 backdrop-blur md:bottom-0 md:left-[220px] md:px-4 md:py-3">
+        <div className="mx-auto flex max-w-5xl flex-wrap justify-between gap-2 text-[11px] font-medium text-slate-600 md:text-xs">
           {groups.map((group) => (
             <span key={group}>{group}: {counts[group] ?? 0}</span>
           ))}
