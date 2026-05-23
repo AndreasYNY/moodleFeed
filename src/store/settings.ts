@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import type { AiProviderId } from '../lib/ai-providers';
 import type { SyncInterval } from '../types';
 
+export type Language = 'en' | 'id';
+
 type SettingValueKey = keyof Omit<
   SettingsState,
   'setSetting' | 'dismissDiscussion' | 'restoreDiscussion' | 'clearDismissedDiscussions' | 'toggleHiddenCourse'
@@ -11,6 +13,7 @@ type SettingValueKey = keyof Omit<
 interface SettingsState {
   syncInterval: SyncInterval;
   theme: 'system' | 'light' | 'dark';
+  language: Language;
   accentColor: string;
   compactFeed: boolean;
   notifyBeforeMinutes: number;
@@ -35,6 +38,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       syncInterval: 15,
       theme: 'system',
+      language: 'en',
       accentColor: '#EA5B0C',
       compactFeed: false,
       notifyBeforeMinutes: 24 * 60,
