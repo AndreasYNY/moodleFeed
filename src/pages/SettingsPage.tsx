@@ -2,13 +2,21 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Github, Trash2, Unplug } from 'lucide-react';
 import { KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { siClaude, siDeepseek, siGooglegemini, siPerplexity, type SimpleIcon } from 'simple-icons';
+import { aiProviders } from '../lib/ai-providers';
 import { cn, initials } from '../lib/utils';
-import { defaultClaudePromptTemplate } from '../lib/prompt-builder';
+import { defaultAiPromptTemplate } from '../lib/prompt-builder';
 import { useAuthStore } from '../store/auth';
 import { useSettingsStore } from '../store/settings';
 import { Topbar } from '../components/Topbar';
 
 const swatches = ['#EA5B0C', '#7C3AED', '#0F766E', '#2563EB', '#DB2777'];
+const providerIcons: Partial<Record<string, SimpleIcon>> = {
+  claude: siClaude,
+  gemini: siGooglegemini,
+  deepseek: siDeepseek,
+  perplexity: siPerplexity,
+};
 
 function stopEnterPropagation(event: KeyboardEvent<HTMLTextAreaElement>) {
   if (event.key === 'Enter') {
@@ -145,10 +153,48 @@ export function SettingsPage() {
                 Restore all
               </button>
             </div>
+            <div>
+              <div className="text-sm font-medium text-slate-700">AI provider</div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {aiProviders.map((provider) => {
+                  const selected = settings.aiProvider === provider.id;
+                  const providerIcon = providerIcons[provider.id];
+                  return (
+                    <button
+                      key={provider.id}
+                      type="button"
+                      onClick={() => settings.setSetting('aiProvider', provider.id)}
+                      className={cn(
+                        'mf-focus rounded-xl border bg-white px-3 py-3 text-left transition hover:bg-slate-50',
+                        selected ? 'border-brand ring-2 ring-brand/20' : 'border-slate-200',
+                      )}
+                      aria-pressed={selected}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={cn('grid h-8 w-8 place-items-center rounded-lg text-xs font-semibold', selected ? 'bg-brand text-white' : 'bg-active text-brand')}>
+                          {providerIcon ? (
+                            <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                              <path d={providerIcon.path} fill="currentColor" />
+                            </svg>
+                          ) : provider.id === 'chatgpt' ? 'GPT' : 'Ki'}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-slate-950">{provider.name}</span>
+                          <span className="block truncate text-xs text-slate-500">{provider.url.replace(/^https?:\/\//, '')}</span>
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <p className="text-xs text-slate-500">
+              MoodleFeed copies the prompt, then opens the selected AI in a new tab. Paste the prompt there and send.
+            </p>
             <label className="block text-sm text-slate-700">
-              Claude forum prompt template
+              AI forum prompt template
               <textarea
-                value={settings.forumPromptTemplate || defaultClaudePromptTemplate}
+                value={settings.forumPromptTemplate || defaultAiPromptTemplate}
                 onKeyDown={stopEnterPropagation}
                 onChange={(event) => settings.setSetting('forumPromptTemplate', event.target.value)}
                 className="mf-focus mt-1 min-h-72 w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-xs md:min-h-96"
@@ -158,7 +204,7 @@ export function SettingsPage() {
               Available placeholders: {'{courseFullName}'}, {'{courseShortName}'}, {'{forumName}'}, {'{discussionId}'}, {'{threadUrl}'}, {'{forumPrompt}'}, {'{tutorContext}'}, {'{studentContext}'}.
             </p>
             <button
-              onClick={() => settings.setSetting('forumPromptTemplate', defaultClaudePromptTemplate)}
+              onClick={() => settings.setSetting('forumPromptTemplate', defaultAiPromptTemplate)}
               className="w-fit rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600"
             >
               Reset prompt template
