@@ -33,6 +33,7 @@ import { DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Moodle } from '../lib/moodle';
 import { uploadMoodleFile } from '../lib/moodle-upload';
+import { getCourseColor } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 
 interface Assignment {
@@ -102,18 +103,6 @@ const statusStyles = {
 };
 
 const gradedStyle = { bg: '#E6F1FB', text: '#185FA5' };
-const accentColor = 'var(--accent, var(--mf-brand))';
-
-function getCourseColor(courseId: number) {
-  const colors = [
-    { dot: '#7C3AED', light: '#F3E8FF', text: '#6D28D9' },
-    { dot: '#0F766E', light: '#CCFBF1', text: '#0F766E' },
-    { dot: '#EA5B0C', light: '#FFF1EA', text: '#C2410C' },
-    { dot: '#2563EB', light: '#DBEAFE', text: '#1D4ED8' },
-    { dot: '#DB2777', light: '#FCE7F3', text: '#BE185D' },
-  ];
-  return colors[Math.abs(courseId) % colors.length];
-}
 
 function formatFileSize(bytes = 0): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -315,7 +304,7 @@ function AttachmentList({ files, token }: { files?: SubmittedFile[]; token: stri
               </a>
             )}
             <div className="flex items-center gap-3 px-3 py-2">
-              <FileText className="h-4 w-4" style={{ color: accentColor }} />
+              <FileText className="h-4 w-4 text-brand" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-slate-800">{file.filename}</div>
                 <div className="text-xs text-slate-500">{formatFileSize(file.filesize)}</div>
@@ -380,7 +369,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
   }[assignment.status];
 
   const progressWidth = assignment.isGraded ? '100%' : submitted ? '50%' : '0%';
-  const progressColor = assignment.isGraded ? '#639922' : accentColor;
+  const progressColor = assignment.isGraded ? '#639922' : 'var(--mf-brand)';
   const gradeValue = formatGradeValue(assignment.grade, assignment.gradeMax, assignment.gradeDisplay);
   const assignmentUrl = buildAssignmentUrl(baseUrl, assignment.cmid);
 
@@ -524,7 +513,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
             <div className="space-y-2">
               {assignment.submittedFiles?.map((file) => (
                 <div key={`${file.fileurl}-${file.filename}`} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2">
-                  <FileText className="h-4 w-4" style={{ color: accentColor }} />
+                  <FileText className="h-4 w-4 text-brand" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-slate-800">{file.filename}</div>
                     <div className="text-xs text-slate-500">{formatFileSize(file.filesize)}</div>
@@ -543,7 +532,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                 <button key={link.url} type="button" onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')} className="block w-full overflow-hidden rounded-lg bg-slate-50 text-left">
                   <div className="relative">
                     <img src={`https://img.youtube.com/vi/${link.id}/hqdefault.jpg`} alt="" className="aspect-video w-full object-cover" />
-                    <span className="absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-white" style={{ backgroundColor: accentColor }}>
+                    <span className="absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-brand text-white">
                       <Play className="h-5 w-5 fill-current" />
                     </span>
                   </div>
@@ -566,7 +555,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                   <input ref={fileInputRef} type="file" className="hidden" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
                   {selectedFile ? (
                     <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                      <FileText className="h-4 w-4" style={{ color: accentColor }} />
+                      <FileText className="h-4 w-4 text-brand" />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium text-slate-800">{selectedFile.name}</div>
                         <div className="text-xs text-slate-500">{formatFileSize(selectedFile.size)}</div>
@@ -617,7 +606,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                         {item.icon ?? item.text}
                       </button>
                     ))}
-                    <button type="button" onClick={pasteYoutubeFromClipboard} className="ml-1 rounded px-2 py-1 text-xs font-medium" style={{ border: `0.5px solid ${accentColor}`, color: accentColor }}>
+                    <button type="button" onClick={pasteYoutubeFromClipboard} className="ml-1 rounded border border-brand px-2 py-1 text-xs font-medium text-brand">
                       ▶ Paste YouTube link
                     </button>
                   </div>
@@ -636,8 +625,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                  style={{ backgroundColor: accentColor }}
+                  className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
                 >
                   <Send className="h-4 w-4" />
                   {submitting ? 'Submitting' : 'Submit'}

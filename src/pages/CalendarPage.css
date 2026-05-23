@@ -1,7 +1,7 @@
 .moodle-calendar .fc {
   --fc-border-color: rgba(148, 163, 184, 0.28);
   --fc-page-bg-color: transparent;
-  --fc-neutral-bg-color: var(--color-background-secondary, #f8fafc);
+  --fc-neutral-bg-color: rgb(248 250 252);
   font-family: var(--font-sans);
   height: 100%;
 }
@@ -11,12 +11,12 @@
 }
 
 .moodle-calendar .fc-day-today {
-  background: #fffcfa !important;
+  background: var(--mf-active) !important;
 }
 
 .moodle-calendar .fc-day-today .fc-daygrid-day-number {
   align-items: center;
-  background: var(--accent, var(--mf-brand));
+  background: var(--mf-brand);
   border-radius: 50%;
   color: white;
   display: flex;
@@ -26,16 +26,16 @@
 }
 
 .moodle-calendar .fc-timegrid-now-indicator-line {
-  border-color: var(--accent, var(--mf-brand)) !important;
+  border-color: var(--mf-brand) !important;
 }
 
 .moodle-calendar .fc-timegrid-now-indicator-arrow {
-  border-top-color: var(--accent, var(--mf-brand)) !important;
+  border-top-color: var(--mf-brand) !important;
 }
 
 .moodle-calendar .fc-col-header-cell-cushion,
 .moodle-calendar .fc-daygrid-day-number {
-  color: var(--color-text-primary, #0f172a);
+  color: inherit;
   font-size: 13px;
   text-decoration: none;
 }
@@ -53,13 +53,13 @@
 }
 
 .moodle-calendar .fc-daygrid-more-link {
-  color: var(--color-text-tertiary, #64748b);
+  color: rgb(100 116 139);
   font-size: 11px;
 }
 
 .moodle-calendar .fc th {
-  border-color: var(--color-border-tertiary, rgba(148, 163, 184, 0.28));
-  color: var(--color-text-tertiary, #64748b);
+  border-color: rgba(148, 163, 184, 0.28);
+  color: rgb(100 116 139);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -68,21 +68,35 @@
 
 .moodle-calendar .fc td,
 .moodle-calendar .fc-scrollgrid {
-  border-color: var(--color-border-tertiary, rgba(148, 163, 184, 0.28)) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
 }
 
 .moodle-calendar .fc-list-event:hover td {
-  background: var(--color-background-secondary, #f8fafc);
+  background: rgb(248 250 252);
 }
 
 .moodle-calendar .fc-list-day-cushion {
-  background: var(--color-background-secondary, #f8fafc) !important;
+  background: rgb(248 250 252) !important;
   font-size: 12px;
   font-weight: 500;
 }
 
 .moodle-calendar .fc-theme-standard .fc-scrollgrid {
   border: 0;
+}
+
+.dark .moodle-calendar .fc {
+  --fc-neutral-bg-color: var(--mf-dark-muted);
+}
+
+.dark .moodle-calendar .fc-daygrid-more-link,
+.dark .moodle-calendar .fc th {
+  color: rgb(148 163 184);
+}
+
+.dark .moodle-calendar .fc-list-event:hover td,
+.dark .moodle-calendar .fc-list-day-cushion {
+  background: var(--mf-dark-muted) !important;
 }
 
 .calendar-layout {

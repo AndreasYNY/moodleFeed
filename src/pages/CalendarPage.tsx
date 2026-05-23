@@ -192,7 +192,7 @@ export function CalendarPage() {
         </button>
         <div className="hidden flex-1 md:block" />
         {overdueCount > 0 && (
-          <div className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#A32D2D]">
+          <div className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
             <AlertCircle className="h-3.5 w-3.5" />
             {overdueCount} overdue
           </div>
@@ -203,16 +203,11 @@ export function CalendarPage() {
               key={view.value}
               type="button"
               onClick={() => changeView(view.value)}
-              className="rounded-md border px-3 py-1.5 text-xs font-semibold"
-              style={
+              className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
                 activeView === view.value
-                  ? {
-                      backgroundColor: 'var(--accent-light, var(--mf-active))',
-                      borderColor: 'var(--accent, var(--mf-brand))',
-                      color: 'var(--accent-text, var(--mf-brand))',
-                    }
-                  : { borderColor: 'transparent', color: '#64748b' }
-              }
+                  ? 'border-brand bg-active text-brand'
+                  : 'border-transparent text-slate-500 hover:bg-slate-50'
+              }`}
             >
               {view.label}
             </button>
