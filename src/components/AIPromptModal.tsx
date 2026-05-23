@@ -1,6 +1,7 @@
 import { Check, CircleCheck, Copy, ExternalLink, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
+import { useI18n } from '../lib/i18n';
 
 interface AIPromptModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export function AIPromptModal({
   providerName,
   providerUrl,
 }: AIPromptModalProps) {
+  const { t } = useI18n();
   const [countDown, setCountDown] = useState(3);
   const [copyAgain, setCopyAgain] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -119,7 +121,7 @@ export function AIPromptModal({
             <Sparkles className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <div id="ai-modal-title" className="text-sm font-medium">Generate with {providerName}</div>
+            <div id="ai-modal-title" className="text-sm font-medium">{t('ai.title', { provider: providerName })}</div>
             <div className="mt-0.5 truncate text-xs text-slate-500">
               {threadTitle} · {courseName}
             </div>
@@ -127,7 +129,7 @@ export function AIPromptModal({
           <button
             ref={closeButtonRef}
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('ai.close')}
             className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
           >
             <X className="h-4 w-4" aria-hidden="true" />
@@ -137,7 +139,7 @@ export function AIPromptModal({
         <div className="mx-[18px] mt-3.5 flex items-center gap-2 rounded-lg border border-brand/25 bg-active px-3 py-2.5 text-brand">
           <CircleCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
           <div className="flex-1 text-xs leading-relaxed">
-            <strong className="font-medium">Prompt copied to clipboard.</strong> {providerName} opens automatically. Paste and send.
+            <strong className="font-medium">{t('ai.copied')}</strong> {t('ai.opensAuto', { provider: providerName })}
           </div>
           {countDown > 0 && (
             <div className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-[11px] font-medium text-white">
@@ -148,14 +150,14 @@ export function AIPromptModal({
 
         <div className="flex items-center justify-between gap-3 px-[18px] pb-1.5 pt-3">
           <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-            Assembled prompt
+            {t('ai.assembledPrompt')}
           </span>
           <button
             onClick={handleCopyAgain}
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
           >
             {copyAgain ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
-            {copyAgain ? 'Copied!' : 'Copy again'}
+            {copyAgain ? t('ai.copiedAgain') : t('ai.copyAgain')}
           </button>
         </div>
 
@@ -169,21 +171,21 @@ export function AIPromptModal({
         <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-slate-200/80 px-[18px] py-3.5">
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-            Opening {providerName} in a new tab
+            {t('ai.opening', { provider: providerName })}
           </div>
           <div className="flex gap-2">
             <button
               onClick={onClose}
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
-              Cancel
+              {t('ai.cancel')}
             </button>
             <button
               onClick={openProvider}
               className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white"
             >
               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-              Open {providerName} now
+              {t('ai.openNow', { provider: providerName })}
             </button>
           </div>
         </div>

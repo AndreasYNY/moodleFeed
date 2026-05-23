@@ -2,34 +2,48 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAssignments } from '../hooks/useAssignments';
 import { useAuthErrorRedirect } from '../hooks/auth-guard';
+import { useI18n, type I18nKey } from '../lib/i18n';
 import type { AssignmentWithCourse } from '../types';
 import { AssignmentCard } from './AssignmentCard';
 import { EmptyState } from './EmptyState';
 import { SkeletonCard } from './SkeletonCard';
 
 function groupOf(assignment: AssignmentWithCourse) {
-  if (assignment.submitted) return 'Completed';
+  if (assignment.submitted) return 'completed';
   const due = assignment.duedate ? assignment.duedate * 1000 : null;
-  if (!due) return 'Upcoming';
+  if (!due) return 'upcoming';
   const diff = due - Date.now();
-  if (diff < 0) return 'Overdue';
-  if (diff <= 48 * 60 * 60 * 1000) return 'Due soon';
-  return 'Upcoming';
+  if (diff < 0) return 'overdue';
+  if (diff <= 48 * 60 * 60 * 1000) return 'dueSoon';
+  return 'upcoming';
 }
 
-const groups = ['Overdue', 'Due soon', 'Upcoming', 'Completed'] as const;
-const filters = ['All', 'Overdue', 'Due soon', 'Done'] as const;
+const groups = ['overdue', 'dueSoon', 'upcoming', 'completed'] as const;
+const filters = ['all', 'overdue', 'dueSoon', 'done'] as const;
+const groupLabels: Record<(typeof groups)[number], I18nKey> = {
+  overdue: 'assignments.group.overdue',
+  dueSoon: 'assignments.group.dueSoon',
+  upcoming: 'assignments.group.upcoming',
+  completed: 'assignments.group.completed',
+};
+const filterLabels: Record<(typeof filters)[number], I18nKey> = {
+  all: 'assignments.filter.all',
+  overdue: 'assignments.filter.overdue',
+  dueSoon: 'assignments.filter.dueSoon',
+  done: 'assignments.filter.done',
+};
 
 export function AssignmentFeed() {
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const focusedAssignmentId = useMemo(() => Number(searchParams.get('assignment')), [searchParams]);
-  const [filter, setFilter] = useState<(typeof filters)[number]>('All');
+  const [filter, setFilter] = useState<(typeof filters)[number]>('all');
   const [sort, setSort] = useState('due');
   const query = useAssignments();
   useAuthErrorRedirect(query.error);
 
   useEffect(() => {
-    if (focusedAssignmentId) setFilter('All');
+    if (focusedAssignmentId) setFilter('all');
   }, [focusedAssignmentId]);
 
   useEffect(() => {
@@ -45,8 +59,8 @@ export function AssignmentFeed() {
 
   const assignments = (query.data ?? [])
     .filter((assignment) => {
-      if (filter === 'All') return true;
-      if (filter === 'Done') return assignment.submitted;
+      if (filter === 'all') return true;
+      if (filter === 'done') return assignment.submitted;
       return groupOf(assignment) === filter;
     })
     .sort((a, b) => (sort === 'course' ? a.courseName.localeCompare(b.courseName) : (a.duedate ?? 0) - (b.duedate ?? 0)));
@@ -68,24 +82,24 @@ export function AssignmentFeed() {
                 filter === item ? 'bg-brand text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200'
               }`}
             >
-              {item}
+              {t(filterLabels[item])}
             </button>
           ))}
         </div>
         <select value={sort} onChange={(event) => setSort(event.target.value)} className="mf-focus rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
-          <option value="due">By due date</option>
-          <option value="course">By course</option>
+          <option value="due">{t('assignments.sort.due')}</option>
+          <option value="course">{t('assignments.sort.course')}</option>
         </select>
       </div>
 
-      {!assignments.length && <EmptyState title="No assignments here" body="Your Moodle feed has nothing matching this filter." />}
+      {!assignments.length && <EmptyState title={t('assignments.emptyTitle')} body={t('assignments.emptyBody')} />}
 
       {groups.map((group) => {
         const items = assignments.filter((assignment) => groupOf(assignment) === group);
         if (!items.length) return null;
         return (
           <section key={group} className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{group}</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t(groupLabels[group])}</h2>
             {items.map((assignment) => (
               <div
                 key={`${assignment.course}-${assignment.id}`}
@@ -101,7 +115,7 @@ export function AssignmentFeed() {
       <div className="fixed bottom-16 left-0 right-0 border-t border-slate-200 bg-white/95 px-3 py-2 backdrop-blur md:bottom-0 md:left-[220px] md:px-4 md:py-3">
         <div className="mx-auto flex max-w-5xl flex-wrap justify-between gap-2 text-[11px] font-medium text-slate-600 md:text-xs">
           {groups.map((group) => (
-            <span key={group}>{group}: {counts[group] ?? 0}</span>
+            <span key={group}>{t(groupLabels[group])}: {counts[group] ?? 0}</span>
           ))}
         </div>
       </div>

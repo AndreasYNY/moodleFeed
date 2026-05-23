@@ -33,6 +33,7 @@ import { DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Moodle } from '../lib/moodle';
 import { uploadMoodleFile } from '../lib/moodle-upload';
+import { useI18n } from '../lib/i18n';
 import { getCourseColor } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 
@@ -110,11 +111,6 @@ function formatFileSize(bytes = 0): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatDueDate(unix: number): string {
-  if (!unix) return 'No due date';
-  return `Due ${format(new Date(unix * 1000), 'MMM d, yyyy')} · ${format(new Date(unix * 1000), 'h:mm a')}`;
-}
-
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -145,14 +141,14 @@ function extractYouTubeLinks(text: string) {
     .filter((item): item is { url: string; id: string } => Boolean(item.id));
 }
 
-function formatGradeValue(grade?: number | string, gradeMax?: number, gradeDisplay?: string): string {
+function formatGradeValue(grade: number | string | undefined, gradeMax: number | undefined, gradeDisplay: string | undefined, fallback: string): string {
   if (gradeDisplay?.trim()) return gradeDisplay;
   if (typeof grade === 'number' && Number.isFinite(grade)) return `${grade.toFixed(2)} / ${gradeMax ?? 100}`;
   if (typeof grade === 'string' && grade.trim()) {
     const numericGrade = Number(grade);
     return Number.isFinite(numericGrade) ? `${numericGrade.toFixed(2)} / ${gradeMax ?? 100}` : grade;
   }
-  return 'Released';
+  return fallback;
 }
 
 function buildAssignmentUrl(baseUrl: string | null, cmid?: number): string | null {
@@ -210,7 +206,7 @@ const YoutubeLite = Node.create({
   },
 });
 
-function normalizeAssignment(assignment: Assignment | LegacyAssignment): Assignment {
+function normalizeAssignment(assignment: Assignment | LegacyAssignment, fallbackCourseName: string): Assignment {
   const legacy = assignment as LegacyAssignment;
   const courseId = assignment.courseId ?? legacy.course ?? 0;
   const dueDate = assignment.dueDate ?? legacy.duedate ?? 0;
@@ -229,7 +225,7 @@ function normalizeAssignment(assignment: Assignment | LegacyAssignment): Assignm
     cmid: assignment.cmid ?? legacy.cmid,
     name: assignment.name,
     courseId,
-    courseName: assignment.courseName ?? 'Course',
+    courseName: assignment.courseName ?? fallbackCourseName,
     courseShortName: assignment.courseShortName ?? '',
     dueDate,
     submissionType,
@@ -290,7 +286,7 @@ function Chip({
   );
 }
 
-function AttachmentList({ files, token }: { files?: SubmittedFile[]; token: string | null }) {
+function AttachmentList({ files, token, openFileLabel }: { files?: SubmittedFile[]; token: string | null; openFileLabel: string }) {
   if (!files?.length) return null;
   return (
     <div className="mt-3 space-y-2">
@@ -309,7 +305,7 @@ function AttachmentList({ files, token }: { files?: SubmittedFile[]; token: stri
                 <div className="truncate text-sm font-medium text-slate-800">{file.filename}</div>
                 <div className="text-xs text-slate-500">{formatFileSize(file.filesize)}</div>
               </div>
-              <a href={fileUrl} target="_blank" rel="noreferrer" className="rounded-lg p-2 text-slate-500 hover:bg-white" title="Open file">
+              <a href={fileUrl} target="_blank" rel="noreferrer" className="rounded-lg p-2 text-slate-500 hover:bg-white" title={openFileLabel}>
                 <Download className="h-4 w-4" />
               </a>
             </div>
@@ -321,7 +317,8 @@ function AttachmentList({ files, token }: { files?: SubmittedFile[]; token: stri
 }
 
 export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubmitText, defaultExpanded = false }: AssignmentCardProps) {
-  const assignment = useMemo(() => normalizeAssignment(rawAssignment), [rawAssignment]);
+  const { t, dateLocale } = useI18n();
+  const assignment = useMemo(() => normalizeAssignment(rawAssignment, t('common.course')), [rawAssignment, t]);
   const courseColor = getCourseColor(assignment.courseId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -343,9 +340,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
       UnderlineExtension,
       Link.configure({ openOnClick: false }),
       YoutubeLite,
-      Placeholder.configure({
-        placeholder: 'Write your online text submission… paste a YouTube link to embed it automatically.',
-      }),
+      Placeholder.configure({ placeholder: t('assignment.placeholder') }),
     ],
     editorProps: {
       handlePaste(view, event) {
@@ -362,15 +357,21 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
   });
 
   const statusLabel = {
-    overdue: 'Overdue',
-    dueSoon: assignment.dueDate ? `Due ${formatDistanceToNow(assignment.dueDate * 1000, { addSuffix: true })}` : 'Due soon',
-    upcoming: assignment.dueDate ? `Upcoming · ${formatDistanceToNow(assignment.dueDate * 1000, { addSuffix: true })}` : 'Upcoming',
-    completed: assignment.dueDate ? `Completed · ${formatDistanceToNow(assignment.dueDate * 1000, { addSuffix: true })}` : 'Completed',
+    overdue: t('assignment.overdue'),
+    dueSoon: assignment.dueDate ? t('assignment.dueSoon', { time: formatDistanceToNow(assignment.dueDate * 1000, { addSuffix: true, locale: dateLocale }) }) : t('assignments.group.dueSoon'),
+    upcoming: assignment.dueDate ? t('assignment.upcoming', { time: formatDistanceToNow(assignment.dueDate * 1000, { addSuffix: true, locale: dateLocale }) }) : t('assignments.group.upcoming'),
+    completed: assignment.dueDate ? t('assignment.completed', { time: formatDistanceToNow(assignment.dueDate * 1000, { addSuffix: true, locale: dateLocale }) }) : t('assignments.group.completed'),
   }[assignment.status];
+  const dueLabel = assignment.dueDate
+    ? t('assignment.dueDate', {
+        date: format(new Date(assignment.dueDate * 1000), 'MMM d, yyyy', { locale: dateLocale }),
+        time: format(new Date(assignment.dueDate * 1000), 'h:mm a', { locale: dateLocale }),
+      })
+    : t('assignment.noDueDate');
 
   const progressWidth = assignment.isGraded ? '100%' : submitted ? '50%' : '0%';
   const progressColor = assignment.isGraded ? '#639922' : 'var(--mf-brand)';
-  const gradeValue = formatGradeValue(assignment.grade, assignment.gradeMax, assignment.gradeDisplay);
+  const gradeValue = formatGradeValue(assignment.grade, assignment.gradeMax, assignment.gradeDisplay, t('assignment.gradeReleased'));
   const assignmentUrl = buildAssignmentUrl(baseUrl, assignment.cmid);
 
   async function handleSubmit() {
@@ -426,7 +427,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
           <div className="flex items-center gap-1">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
-                <button type="button" className="rounded-lg p-2 text-slate-400 hover:bg-slate-50" title="Assignment actions">
+                <button type="button" className="rounded-lg p-2 text-slate-400 hover:bg-slate-50" title={t('assignment.actions')}>
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenu.Trigger>
@@ -445,19 +446,19 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                         className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 focus:bg-slate-50"
                       >
                         <ExternalLink className="h-4 w-4" />
-                        Open in Moodle
+                        {t('assignment.openInMoodle')}
                       </a>
                     </DropdownMenu.Item>
                   ) : (
                     <DropdownMenu.Item disabled className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-400 outline-none">
                       <ExternalLink className="h-4 w-4" />
-                      Link unavailable
+                      {t('assignment.linkUnavailable')}
                     </DropdownMenu.Item>
                   )}
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
-            <button type="button" onClick={() => setExpanded((value) => !value)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-50" title={expanded ? 'Hide fields' : 'Show fields'}>
+            <button type="button" onClick={() => setExpanded((value) => !value)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-50" title={expanded ? t('assignment.hideFields') : t('assignment.showFields')}>
               <ChevronDown className={`h-4 w-4 transition ${expanded ? 'rotate-180' : ''}`} />
             </button>
           </div>
@@ -465,7 +466,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Chip bg="#F1F5F9" text="#475569" icon={<FileText className="h-3 w-3" />}>
-            {assignment.submissionType === 'both' ? 'file + text' : assignment.submissionType === 'onlinetext' ? 'online text' : 'file upload'}
+            {assignment.submissionType === 'both' ? t('assignment.fileText') : assignment.submissionType === 'onlinetext' ? t('assignment.onlineText') : t('assignment.fileUpload')}
           </Chip>
           <Chip
             bg={statusStyles[assignment.status].bg}
@@ -476,7 +477,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
           </Chip>
           {assignment.isGraded && (
             <Chip bg={gradedStyle.bg} text={gradedStyle.text} icon={<Star className="h-3 w-3" />}>
-              Graded
+              {t('assignment.graded')}
             </Chip>
           )}
         </div>
@@ -488,28 +489,28 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
 
       {expanded && (submitted ? (
         <>
-          <Section title="Assignment brief" defaultOpen={false}>
+          <Section title={t('assignment.assignmentBrief')} defaultOpen={false}>
             <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: sanitizeHtml(assignment.description) }} />
-            <AttachmentList files={assignment.briefFiles} token={token} />
+            <AttachmentList files={assignment.briefFiles} token={token} openFileLabel={t('assignment.openFile')} />
           </Section>
           {(assignment.isGraded || assignment.feedbackText) && (
-            <Section title="Grade & feedback" defaultOpen>
+            <Section title={t('assignment.gradeFeedback')} defaultOpen>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="rounded-lg bg-slate-50 p-3">
-                  <div className="text-xs text-slate-500">Grade</div>
+                  <div className="text-xs text-slate-500">{t('assignment.grade')}</div>
                   <div className="mt-1 text-[22px] font-medium text-slate-950" dangerouslySetInnerHTML={{ __html: sanitizeHtml(gradeValue) }} />
                 </div>
                 <div className="rounded-lg bg-slate-50 p-3">
-                  <div className="text-xs text-slate-500">Feedback</div>
+                  <div className="text-xs text-slate-500">{t('assignment.feedback')}</div>
                   <div
                     className="prose prose-sm mt-1 max-w-none text-slate-700"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(assignment.feedbackText || 'No feedback text.') }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(assignment.feedbackText || t('assignment.noFeedback')) }}
                   />
                 </div>
               </div>
             </Section>
           )}
-          <Section title="Submitted work" defaultOpen>
+          <Section title={t('assignment.submittedWork')} defaultOpen>
             <div className="space-y-2">
               {assignment.submittedFiles?.map((file) => (
                 <div key={`${file.fileurl}-${file.filename}`} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2">
@@ -518,7 +519,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                     <div className="truncate text-sm font-medium text-slate-800">{file.filename}</div>
                     <div className="text-xs text-slate-500">{formatFileSize(file.filesize)}</div>
                   </div>
-                  <a href={moodleFileUrl(file.fileurl, token)} target="_blank" rel="noreferrer" className="rounded-lg p-2 text-slate-500 hover:bg-white" title="Download">
+                  <a href={moodleFileUrl(file.fileurl, token)} target="_blank" rel="noreferrer" className="rounded-lg p-2 text-slate-500 hover:bg-white" title={t('common.download')}>
                     <Download className="h-4 w-4" />
                   </a>
                 </div>
@@ -536,7 +537,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                       <Play className="h-5 w-5 fill-current" />
                     </span>
                   </div>
-                  <div className="px-3 py-2 text-xs text-slate-500">YouTube link detected — click to play</div>
+                  <div className="px-3 py-2 text-xs text-slate-500">{t('assignment.youtubeDetected')}</div>
                 </button>
               ))}
             </div>
@@ -544,11 +545,11 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
         </>
       ) : (
         <>
-          <Section title="Assignment brief" defaultOpen={false}>
+          <Section title={t('assignment.assignmentBrief')} defaultOpen={false}>
             <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: sanitizeHtml(assignment.description) }} />
-            <AttachmentList files={assignment.briefFiles} token={token} />
+            <AttachmentList files={assignment.briefFiles} token={token} openFileLabel={t('assignment.openFile')} />
           </Section>
-          <Section title="Submit your work" defaultOpen>
+          <Section title={t('assignment.submitWork')} defaultOpen>
             <div className="space-y-3">
               {(assignment.submissionType === 'file' || assignment.submissionType === 'both') && (
                 <>
@@ -560,7 +561,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                         <div className="truncate text-sm font-medium text-slate-800">{selectedFile.name}</div>
                         <div className="text-xs text-slate-500">{formatFileSize(selectedFile.size)}</div>
                       </div>
-                      <button type="button" onClick={() => setSelectedFile(null)} className="rounded-lg p-1 text-slate-400 hover:bg-white" title="Remove file">
+                      <button type="button" onClick={() => setSelectedFile(null)} className="rounded-lg p-1 text-slate-400 hover:bg-white" title={t('assignment.removeFile')}>
                         <X className="h-4 w-4" />
                       </button>
                     </div>
@@ -577,8 +578,8 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                       style={{ borderWidth: 1.5 }}
                     >
                       <UploadCloud className="mx-auto h-6 w-6 text-slate-400" />
-                      <div className="mt-2 text-sm font-medium text-slate-700">Drop or choose a file</div>
-                      <div className="mt-1 text-xs text-slate-500">PDF, DOCX, ZIP — max 20 MB</div>
+                      <div className="mt-2 text-sm font-medium text-slate-700">{t('assignment.dropChooseFile')}</div>
+                      <div className="mt-1 text-xs text-slate-500">{t('assignment.fileHint')}</div>
                     </div>
                   )}
                 </>
@@ -588,26 +589,26 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                 <div className="overflow-hidden rounded-lg border border-slate-200">
                   <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 p-1.5">
                     {[
-                      { label: 'B', icon: <Bold className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleBold().run() },
-                      { label: 'I', icon: <Italic className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleItalic().run() },
-                      { label: 'U', icon: <UnderlineIcon className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleUnderline().run() },
-                      { label: 'S', icon: <Strikethrough className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleStrike().run() },
-                      { label: 'H1', text: 'H1', action: () => editor?.chain().focus().toggleHeading({ level: 1 }).run() },
-                      { label: 'H2', text: 'H2', action: () => editor?.chain().focus().toggleHeading({ level: 2 }).run() },
-                      { label: 'List', icon: <List className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleBulletList().run() },
-                      { label: 'Ordered list', icon: <ListOrdered className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleOrderedList().run() },
-                      { label: 'Link', icon: <LinkIcon className="h-3.5 w-3.5" />, action: () => {
-                        const href = window.prompt('URL');
+                      { label: t('editor.bold'), icon: <Bold className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleBold().run() },
+                      { label: t('editor.italic'), icon: <Italic className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleItalic().run() },
+                      { label: t('editor.underline'), icon: <UnderlineIcon className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleUnderline().run() },
+                      { label: t('editor.strike'), icon: <Strikethrough className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleStrike().run() },
+                      { label: t('editor.heading1'), text: 'H1', action: () => editor?.chain().focus().toggleHeading({ level: 1 }).run() },
+                      { label: t('editor.heading2'), text: 'H2', action: () => editor?.chain().focus().toggleHeading({ level: 2 }).run() },
+                      { label: t('editor.bulletList'), icon: <List className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleBulletList().run() },
+                      { label: t('editor.orderedList'), icon: <ListOrdered className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleOrderedList().run() },
+                      { label: t('editor.link'), icon: <LinkIcon className="h-3.5 w-3.5" />, action: () => {
+                        const href = window.prompt(t('editor.urlPrompt'));
                         if (href) editor?.chain().focus().setLink({ href }).run();
                       } },
-                      { label: 'Quote', icon: <Quote className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleBlockquote().run() },
+                      { label: t('editor.blockquote'), icon: <Quote className="h-3.5 w-3.5" />, action: () => editor?.chain().focus().toggleBlockquote().run() },
                     ].map((item) => (
                       <button key={item.label} type="button" onClick={item.action} className="grid h-[26px] min-w-[26px] place-items-center rounded text-xs text-slate-600 hover:bg-white" title={item.label}>
                         {item.icon ?? item.text}
                       </button>
                     ))}
                     <button type="button" onClick={pasteYoutubeFromClipboard} className="ml-1 rounded border border-brand px-2 py-1 text-xs font-medium text-brand">
-                      ▶ Paste YouTube link
+                      ▶ {t('assignment.pasteYoutube')}
                     </button>
                   </div>
                   <div className="min-h-20 px-3 py-2 text-[13px]">
@@ -619,7 +620,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
               <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                 <div className="flex items-center gap-1 text-xs text-slate-500">
                   <CalendarDays className="h-3.5 w-3.5" />
-                  {formatDueDate(assignment.dueDate)}
+                  {dueLabel}
                 </div>
                 <button
                   type="button"
@@ -628,7 +629,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                   className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
                 >
                   <Send className="h-4 w-4" />
-                  {submitting ? 'Submitting' : 'Submit'}
+                  {submitting ? t('assignment.submitting') : t('assignment.submit')}
                 </button>
               </div>
             </div>

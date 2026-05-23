@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForums } from '../hooks/useForums';
 import { useAuthErrorRedirect } from '../hooks/auth-guard';
+import { useI18n, type I18nKey } from '../lib/i18n';
 import { absoluteMoodleUrl, cn } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import { useSettingsStore } from '../store/settings';
@@ -11,29 +12,37 @@ import type { ForumThread } from '../types';
 import { EmptyState } from './EmptyState';
 import { SkeletonCard } from './SkeletonCard';
 
-const groups = ['Not replied', 'Checking reply', 'You replied', 'Closed'] as const;
-const filters = ['All', ...groups] as const;
+const groups = ['notReplied', 'checking', 'replied', 'closed'] as const;
+const filters = ['all', ...groups] as const;
+const replyLabels: Record<(typeof groups)[number], I18nKey> & { all: I18nKey } = {
+  all: 'forums.filter.all',
+  notReplied: 'forums.status.notReplied',
+  checking: 'forums.status.checking',
+  replied: 'forums.status.replied',
+  closed: 'forums.status.closed',
+};
 
 function replyLabel(thread: ForumThread) {
-  if (thread.replyStatusLoading) return 'Checking reply';
-  if (thread.replied) return 'You replied';
-  if (thread.acceptsReplies === false) return 'Closed';
-  return 'Not replied';
+  if (thread.replyStatusLoading) return 'checking';
+  if (thread.replied) return 'replied';
+  if (thread.acceptsReplies === false) return 'closed';
+  return 'notReplied';
 }
 
 function replyBadgeClass(label: ReturnType<typeof replyLabel>) {
-  if (label === 'You replied') return 'bg-emerald-50 text-emerald-700';
-  if (label === 'Not replied') return 'bg-red-50 text-red-700';
-  if (label === 'Closed') return 'bg-slate-100 text-slate-600';
+  if (label === 'replied') return 'bg-emerald-50 text-emerald-700';
+  if (label === 'notReplied') return 'bg-red-50 text-red-700';
+  if (label === 'closed') return 'bg-slate-100 text-slate-600';
   return 'bg-active text-brand';
 }
 
 export function ForumFeed() {
+  const { t, dateLocale } = useI18n();
   const query = useForums();
   const baseUrl = useAuthStore((state) => state.baseUrl);
   const dismissDiscussion = useSettingsStore((state) => state.dismissDiscussion);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-  const [filter, setFilter] = useState<(typeof filters)[number]>('All');
+  const [filter, setFilter] = useState<(typeof filters)[number]>('all');
   useAuthErrorRedirect(query.error);
 
   if (query.isLoading) {
@@ -41,12 +50,12 @@ export function ForumFeed() {
   }
 
   if (!query.data?.length) {
-    return <EmptyState title="No forum threads" body="Forum discussions from your enrolled courses will appear here." />;
+    return <EmptyState title={t('forums.emptyTitle')} body={t('forums.emptyBody')} />;
   }
 
-  const filteredThreads = query.data.filter((thread) => filter === 'All' || replyLabel(thread) === filter);
+  const filteredThreads = query.data.filter((thread) => filter === 'all' || replyLabel(thread) === filter);
   const counts = filters.reduce<Record<string, number>>((acc, item) => {
-    acc[item] = item === 'All' ? query.data.length : query.data.filter((thread) => replyLabel(thread) === item).length;
+    acc[item] = item === 'all' ? query.data.length : query.data.filter((thread) => replyLabel(thread) === item).length;
     return acc;
   }, {});
 
@@ -62,14 +71,14 @@ export function ForumFeed() {
               filter === item ? 'bg-brand text-white ring-brand' : 'bg-white text-slate-600',
             )}
           >
-            {item}
+            {t(replyLabels[item])}
             <span className="ml-1 opacity-75">{counts[item] ?? 0}</span>
           </button>
         ))}
       </div>
 
       {!filteredThreads.length && (
-        <EmptyState title="No forum threads" body="No discussions match the selected forum filter." />
+        <EmptyState title={t('forums.emptyTitle')} body={t('forums.emptyFilterBody')} />
       )}
 
       {groups.map((group) => {
@@ -79,7 +88,7 @@ export function ForumFeed() {
         return (
           <section key={group} className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{group}</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t(replyLabels[group])}</h2>
               <span className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', replyBadgeClass(group))}>
                 {threads.length}
               </span>
@@ -98,15 +107,15 @@ export function ForumFeed() {
                       </div>
                       <h2 className="break-words text-base font-semibold text-slate-950">{thread.name || thread.subject}</h2>
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span>Last by {thread.userfullname || 'Unknown'}</span>
-                        {thread.timemodified && <span>{formatDistanceToNow(thread.timemodified * 1000, { addSuffix: true })}</span>}
+                        <span>{t('forums.lastBy', { name: thread.userfullname || t('common.unknown') })}</span>
+                        {thread.timemodified && <span>{formatDistanceToNow(thread.timemodified * 1000, { addSuffix: true, locale: dateLocale })}</span>}
                       </div>
                     </Link>
                     <div className="relative">
                       <button
                         onClick={() => setOpenMenuId((current) => (current === discussionId ? null : discussionId))}
                         className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
-                        title="Thread actions"
+                        title={t('forums.threadActions')}
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
@@ -119,7 +128,7 @@ export function ForumFeed() {
                             className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                           >
                             <ExternalLink className="h-4 w-4" />
-                            Open in Moodle
+                            {t('forums.openInMoodle')}
                           </a>
                           <button
                             onClick={() => {
@@ -129,7 +138,7 @@ export function ForumFeed() {
                             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50"
                           >
                             <EyeOff className="h-4 w-4" />
-                            Dismiss
+                            {t('forums.dismiss')}
                           </button>
                         </div>
                       )}
@@ -138,10 +147,10 @@ export function ForumFeed() {
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
                       <MessageCircle className="h-3.5 w-3.5" />
-                      {thread.numreplies ?? 0} replies
+                      {t('forums.replies', { count: thread.numreplies ?? 0 })}
                     </span>
                     <span className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', replyBadgeClass(label))}>
-                      {label}
+                      {t(replyLabels[label])}
                     </span>
                   </div>
                 </article>

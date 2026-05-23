@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useDiscussion } from '../hooks/useDiscussion';
 import { useAuthErrorRedirect } from '../hooks/auth-guard';
+import { useI18n } from '../lib/i18n';
 import { Moodle } from '../lib/moodle';
 import { absoluteMoodleUrl, initials, sanitizeHtml, stripHtml } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
@@ -32,6 +33,7 @@ function splitPromptAndReplies(posts: ForumPost[]) {
 }
 
 export function DiscussionView({ discussionId }: { discussionId: number }) {
+  const { t, dateLocale } = useI18n();
   const [showAll, setShowAll] = useState(false);
   const [editingPostId, setEditingPostId] = useState<number | null>(null);
   const [editingMessage, setEditingMessage] = useState('');
@@ -53,13 +55,13 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
 
   const replyMutation = useMutation({
     mutationFn: (message: string) =>
-      Moodle.reply(baseUrl!, token!, promptPost?.id ?? discussionId, `Re: ${thread?.name ?? 'Forum reply'}`, message),
+      Moodle.reply(baseUrl!, token!, promptPost?.id ?? discussionId, `Re: ${thread?.name ?? t('common.forumReply')}`, message),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['posts', discussionId] }),
   });
 
   const editMutation = useMutation({
     mutationFn: (post: ForumPost) =>
-      Moodle.updatePost(baseUrl!, token!, post.id, post.subject ?? `Re: ${thread?.name ?? 'Forum reply'}`, editingMessage),
+      Moodle.updatePost(baseUrl!, token!, post.id, post.subject ?? `Re: ${thread?.name ?? t('common.forumReply')}`, editingMessage),
     onSuccess: () => {
       setEditingPostId(null);
       setEditingMessage('');
@@ -77,31 +79,31 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
 
   const promptContext = useMemo(
     () => ({
-      courseFullName: thread?.courseName ?? 'Course',
+      courseFullName: thread?.courseName ?? t('common.course'),
       courseShortName: thread?.courseShortName,
-      forumName: thread?.name ?? thread?.forumName ?? 'Forum thread',
+      forumName: thread?.name ?? thread?.forumName ?? t('common.forumThread'),
       discussionId,
       threadUrl: absoluteMoodleUrl(baseUrl, `/mod/forum/discuss.php?d=${discussionId}`),
       forumPrompt: promptPost?.message ?? thread?.message ?? '',
       tutorPosts: replies.filter(isTutor).map((post) => ({
-        authorName: post.author?.fullname ?? post.userfullname ?? 'Tutor',
+        authorName: post.author?.fullname ?? post.userfullname ?? t('discussion.tutor'),
         authorId: post.author?.id ?? post.userid ?? 0,
         body: post.message ?? '',
       })),
       studentPosts: replies.filter((post) => !isTutor(post)).map((post) => ({
-        authorName: post.author?.fullname ?? post.userfullname ?? 'Student',
+        authorName: post.author?.fullname ?? post.userfullname ?? t('discussion.student'),
         authorId: post.author?.id ?? post.userid ?? 0,
         body: post.message ?? '',
       })),
     }),
-    [baseUrl, discussionId, promptPost?.message, replies, thread],
+    [baseUrl, discussionId, promptPost?.message, replies, thread, t],
   );
 
   if (postsQuery.isLoading) {
     return <div className="space-y-3">{Array.from({ length: 4 }, (_, index) => <SkeletonCard key={index} />)}</div>;
   }
 
-  if (!posts.length) return <EmptyState title="Thread unavailable" body="Moodle did not return posts for this discussion." />;
+  if (!posts.length) return <EmptyState title={t('discussion.unavailableTitle')} body={t('discussion.unavailableBody')} />;
 
   return (
     <div className="flex min-h-[calc(100vh-56px)] flex-col">
@@ -109,7 +111,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
         <article className="mf-card border-brand/25">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="mb-2 text-xs font-semibold text-brand">Thread prompt</div>
+              <div className="mb-2 text-xs font-semibold text-brand">{t('discussion.threadPrompt')}</div>
               <h2 className="break-words text-base font-semibold text-slate-950 md:text-lg">{promptPost.subject ?? thread?.name}</h2>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -118,7 +120,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
-                title="Open module discussion in Moodle"
+                title={t('discussion.openInMoodle')}
               >
                 <ExternalLink className="h-4 w-4" />
               </a>
@@ -135,7 +137,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
             const tutor = isTutor(post);
             const mine = (post.author?.id ?? post.userid) === userId;
             const canEdit = mine && post.capabilities?.edit !== false;
-            const author = post.author?.fullname ?? post.userfullname ?? 'Unknown';
+            const author = post.author?.fullname ?? post.userfullname ?? t('common.unknown');
             return (
               <article id={`post-${post.id}`} key={post.id} className={`mf-card scroll-mt-20 ${tutor ? 'border-l-4 border-l-brand' : ''}`}>
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -146,14 +148,14 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                         <span className="break-words text-sm font-semibold text-slate-950">{author}</span>
                         {mine && (
                           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                            You
+                            {t('discussion.you')}
                           </span>
                         )}
                         <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${tutor ? 'bg-active text-brand' : 'bg-slate-100 text-slate-600'}`}>
-                          {tutor ? 'Tutor' : 'Student'}
+                          {tutor ? t('discussion.tutor') : t('discussion.student')}
                         </span>
                       </div>
-                      {postTime(post) > 0 && <div className="text-xs text-slate-500">{formatDistanceToNow(postTime(post) * 1000, { addSuffix: true })}</div>}
+                      {postTime(post) > 0 && <div className="text-xs text-slate-500">{formatDistanceToNow(postTime(post) * 1000, { addSuffix: true, locale: dateLocale })}</div>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -165,12 +167,12 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                         }}
                         disabled={!canEdit}
                         className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        title={canEdit ? 'Edit reply' : 'Editing is closed in Moodle'}
+                        title={canEdit ? t('discussion.editReply') : t('discussion.editingClosed')}
                       >
                         <Edit3 className="h-4 w-4" />
                       </button>
                     )}
-                    <button className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title="Quote">
+                    <button className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title={t('discussion.quote')}>
                       <Quote className="h-4 w-4" />
                     </button>
                   </div>
@@ -188,7 +190,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                         disabled={editMutation.isPending}
                         className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
                       >
-                        {editMutation.isPending ? 'Saving' : 'Save edit'}
+                        {editMutation.isPending ? t('discussion.saving') : t('discussion.saveEdit')}
                       </button>
                       <button
                         onClick={() => {
@@ -197,7 +199,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                         }}
                         className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600"
                       >
-                        Cancel
+                        {t('discussion.cancel')}
                       </button>
                     </div>
                   </div>
@@ -218,7 +220,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
 
         {replies.length > 5 && !showAll && (
           <button onClick={() => setShowAll(true)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600">
-            Show {replies.length - 5} more replies
+            {t('discussion.showMore', { count: replies.length - 5 })}
           </button>
         )}
       </div>
@@ -227,7 +229,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
           onClick={scrollToMyAnswer}
           className="fixed bottom-[440px] right-4 z-30 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-700 md:bottom-[300px] md:right-6"
         >
-          My answer
+          {t('discussion.myAnswer')}
         </button>
       )}
       {canReply ? (
@@ -240,7 +242,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
       ) : (
         <div className="border-t border-slate-200 bg-white p-4">
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            This discussion is closed and no longer accepts replies.
+            {t('discussion.closed')}
           </div>
         </div>
       )}

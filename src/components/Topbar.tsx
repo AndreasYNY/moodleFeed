@@ -1,11 +1,13 @@
 import { ExternalLink, LogOut, RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useI18n } from '../lib/i18n';
 import { initials } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import { NotificationInbox } from './NotificationInbox';
 
 export function Topbar({ title, breadcrumb }: { title: string; breadcrumb?: string }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { userFullName, baseUrl, logout } = useAuthStore();
@@ -23,7 +25,7 @@ export function Topbar({ title, breadcrumb }: { title: string; breadcrumb?: stri
             target="_blank"
             rel="noreferrer"
             className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
-            title="Open Moodle"
+            title={t('topbar.openMoodle')}
           >
             <ExternalLink className="h-4 w-4" />
           </a>
@@ -31,7 +33,7 @@ export function Topbar({ title, breadcrumb }: { title: string; breadcrumb?: stri
         <button
           onClick={() => queryClient.invalidateQueries()}
           className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
-          title="Sync now"
+          title={t('topbar.syncNow')}
         >
           <RefreshCw className="h-4 w-4" />
         </button>
@@ -45,7 +47,7 @@ export function Topbar({ title, breadcrumb }: { title: string; breadcrumb?: stri
             navigate('/login', { replace: true });
           }}
           className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
-          title="Disconnect"
+          title={t('topbar.logout')}
         >
           <LogOut className="h-4 w-4" />
         </button>

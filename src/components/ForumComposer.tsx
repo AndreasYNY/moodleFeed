@@ -6,6 +6,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Bold, Heading2, Heading3, Italic, Link, List, ListOrdered, Maximize2, Quote, Sparkles, Underline as UnderlineIcon } from 'lucide-react';
 import { useState } from 'react';
 import { getAiProvider } from '../lib/ai-providers';
+import { useI18n } from '../lib/i18n';
 import { buildAiPrompt, defaultAiPromptTemplate, type DiscussionContext } from '../lib/prompt-builder';
 import { useSettingsStore } from '../store/settings';
 import { AIPromptModal } from './AIPromptModal';
@@ -17,6 +18,7 @@ export function ForumComposer({
   onPost: (html: string) => Promise<void>;
   context: DiscussionContext;
 }) {
+  const { t } = useI18n();
   const [fullscreen, setFullscreen] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [assembledPrompt, setAssembledPrompt] = useState('');
@@ -28,7 +30,7 @@ export function ForumComposer({
       StarterKit,
       Underline,
       LinkExtension.configure({ openOnClick: false }),
-      Placeholder.configure({ placeholder: 'Write your reply...' }),
+      Placeholder.configure({ placeholder: t('composer.placeholder') }),
     ],
     content: '',
     immediatelyRender: false,
@@ -38,19 +40,19 @@ export function ForumComposer({
   const text = editor?.getText() ?? '';
 
   const toolbar = [
-    { icon: Bold, label: 'Bold', action: () => editor?.chain().focus().toggleBold().run() },
-    { icon: Italic, label: 'Italic', action: () => editor?.chain().focus().toggleItalic().run() },
-    { icon: UnderlineIcon, label: 'Underline', action: () => editor?.chain().focus().toggleUnderline().run() },
-    { icon: ListOrdered, label: 'Ordered list', action: () => editor?.chain().focus().toggleOrderedList().run() },
-    { icon: List, label: 'Bullet list', action: () => editor?.chain().focus().toggleBulletList().run() },
-    { icon: Quote, label: 'Blockquote', action: () => editor?.chain().focus().toggleBlockquote().run() },
-    { icon: Heading2, label: 'H2', action: () => editor?.chain().focus().toggleHeading({ level: 2 }).run() },
-    { icon: Heading3, label: 'H3', action: () => editor?.chain().focus().toggleHeading({ level: 3 }).run() },
+    { icon: Bold, label: t('editor.bold'), action: () => editor?.chain().focus().toggleBold().run() },
+    { icon: Italic, label: t('editor.italic'), action: () => editor?.chain().focus().toggleItalic().run() },
+    { icon: UnderlineIcon, label: t('editor.underline'), action: () => editor?.chain().focus().toggleUnderline().run() },
+    { icon: ListOrdered, label: t('editor.orderedList'), action: () => editor?.chain().focus().toggleOrderedList().run() },
+    { icon: List, label: t('editor.bulletList'), action: () => editor?.chain().focus().toggleBulletList().run() },
+    { icon: Quote, label: t('editor.blockquote'), action: () => editor?.chain().focus().toggleBlockquote().run() },
+    { icon: Heading2, label: t('editor.heading2'), action: () => editor?.chain().focus().toggleHeading({ level: 2 }).run() },
+    { icon: Heading3, label: t('editor.heading3'), action: () => editor?.chain().focus().toggleHeading({ level: 3 }).run() },
     {
       icon: Link,
-      label: 'Link',
+      label: t('editor.link'),
       action: () => {
-        const url = window.prompt('URL');
+        const url = window.prompt(t('composer.linkPrompt'));
         if (url) editor?.chain().focus().setLink({ href: url }).run();
       },
     },
@@ -71,7 +73,7 @@ export function ForumComposer({
               <item.icon className="h-4 w-4" />
             </button>
           ))}
-          <button onClick={() => setFullscreen((value) => !value)} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50" title="Fullscreen">
+          <button onClick={() => setFullscreen((value) => !value)} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50" title={t('composer.fullscreen')}>
             <Maximize2 className="h-4 w-4" />
           </button>
         </div>
@@ -80,7 +82,7 @@ export function ForumComposer({
           className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-active px-3 py-2 text-sm font-semibold text-brand"
         >
           <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">Generate with {aiProvider.name}</span>
+          <span className="hidden sm:inline">{t('composer.generateWith', { provider: aiProvider.name })}</span>
           <span className="sm:hidden">{aiProvider.name}</span>
         </button>
       </div>
@@ -88,10 +90,10 @@ export function ForumComposer({
         <EditorContent editor={editor} />
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs text-slate-500">{text.length} characters</span>
+        <span className="text-xs text-slate-500">{t('composer.characters', { count: text.length })}</span>
         <div className="flex gap-2">
           <button onClick={() => editor?.commands.clearContent()} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600">
-            Discard
+            {t('composer.discard')}
           </button>
           <button
             onClick={async () => {
@@ -100,7 +102,7 @@ export function ForumComposer({
             }}
             className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white"
           >
-            Post reply
+            {t('composer.postReply')}
           </button>
         </div>
       </div>

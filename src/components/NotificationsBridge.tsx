@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAssignments } from '../hooks/useAssignments';
 import { useForums } from '../hooks/useForums';
+import { useI18n } from '../lib/i18n';
 import { useNotificationsStore } from '../store/notifications';
 import { useSettingsStore } from '../store/settings';
 
@@ -40,6 +41,7 @@ function notifyBrowser(title: string, body: string, enabled: boolean) {
 }
 
 export function NotificationsBridge() {
+  const { t, dateLocale } = useI18n();
   const settings = useSettingsStore();
   const assignmentsQuery = useAssignments();
   const forumsQuery = useForums();
@@ -89,7 +91,7 @@ export function NotificationsBridge() {
       assignments
         .filter((assignment) => !snapshot.assignmentIds.includes(assignment.id))
         .forEach((assignment) => {
-          pushToast('New assignment detected', `${assignment.courseName}: ${assignment.name}`, `assignment-new-${assignment.id}`, '/assignments');
+          pushToast(t('notifications.newAssignment'), t('notifications.courseItem', { course: assignment.courseName, name: assignment.name }), `assignment-new-${assignment.id}`, '/assignments');
         });
     }
 
@@ -105,7 +107,7 @@ export function NotificationsBridge() {
         const key = `assignment-overdue-${assignment.id}`;
         if (!alertedKeys.has(key)) {
           alertedKeys.add(key);
-          pushToast('Assignment overdue', `${assignment.courseName}: ${assignment.name}`, key, '/assignments');
+          pushToast(t('notifications.assignmentOverdue'), t('notifications.courseItem', { course: assignment.courseName, name: assignment.name }), key, '/assignments');
         }
       }
 
@@ -114,8 +116,8 @@ export function NotificationsBridge() {
         if (!alertedKeys.has(key)) {
           alertedKeys.add(key);
           pushToast(
-            'Assignment due soon',
-            `${assignment.courseName}: ${assignment.name} is due ${formatDistanceToNow(dueMs, { addSuffix: true })}`,
+            t('notifications.assignmentDueSoon'),
+            t('notifications.assignmentDueBody', { course: assignment.courseName, name: assignment.name, time: formatDistanceToNow(dueMs, { addSuffix: true, locale: dateLocale }) }),
             key,
             '/assignments',
           );
@@ -130,8 +132,8 @@ export function NotificationsBridge() {
         const currentReplies = thread.numreplies ?? 0;
         if (currentReplies > previousReplies) {
           pushToast(
-            'New forum replies',
-            `${thread.courseName}: ${thread.name || thread.subject}`,
+            t('notifications.newForumReplies'),
+            t('notifications.courseItem', { course: thread.courseName, name: thread.name || thread.subject }),
             `forum-replies-${discussionId}-${currentReplies}`,
             `/forums/${discussionId}`,
           );
@@ -157,6 +159,8 @@ export function NotificationsBridge() {
     settings.notifyOverdue,
     threads,
     pushToast,
+    t,
+    dateLocale,
   ]);
 
   if (!toasts.length) return null;
@@ -173,7 +177,7 @@ export function NotificationsBridge() {
             <button
               onClick={() => setToasts((current) => current.filter((item) => item.id !== toast.id))}
               className="rounded-lg p-1 text-slate-400 hover:bg-slate-50"
-              title="Dismiss notification"
+              title={t('notifications.dismiss')}
             >
               <X className="h-4 w-4" />
             </button>

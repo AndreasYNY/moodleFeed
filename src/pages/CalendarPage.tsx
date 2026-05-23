@@ -6,9 +6,11 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import type { DatesSetArg, EventClickArg, EventContentArg } from '@fullcalendar/core';
 import { AlertCircle, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { format, formatDistanceToNow, isSameDay } from 'date-fns';
+import type { Locale } from 'date-fns';
 import { MouseEvent, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssignments } from '../hooks/useAssignments';
+import { useI18n, type I18nKey } from '../lib/i18n';
 import { getCourseColor } from '../lib/utils';
 import type { AssignmentWithCourse } from '../types';
 import './CalendarPage.css';
@@ -31,10 +33,10 @@ interface CalendarEvent {
   };
 }
 
-const viewOptions: Array<{ label: string; value: CalendarView }> = [
-  { label: 'Month', value: 'dayGridMonth' },
-  { label: 'Week', value: 'timeGridWeek' },
-  { label: 'List', value: 'listMonth' },
+const viewOptions: Array<{ labelKey: I18nKey; value: CalendarView }> = [
+  { labelKey: 'calendar.month', value: 'dayGridMonth' },
+  { labelKey: 'calendar.week', value: 'timeGridWeek' },
+  { labelKey: 'calendar.list', value: 'listMonth' },
 ];
 
 function assignmentDueDate(assignment: AssignmentWithCourse) {
@@ -60,14 +62,14 @@ function getEventColors(assignment: AssignmentWithCourse) {
   return { bg: color.light, text: color.text, border: color.dot };
 }
 
-function formatRange(arg?: DatesSetArg) {
-  if (!arg) return format(new Date(), 'MMMM yyyy');
+function formatRange(arg: DatesSetArg | undefined, locale: Locale) {
+  if (!arg) return format(new Date(), 'MMMM yyyy', { locale });
   if (arg.view.type === 'timeGridWeek') {
     const end = new Date(arg.end);
     end.setDate(end.getDate() - 1);
-    return `${format(arg.start, 'MMM d')} - ${format(end, 'd, yyyy')}`;
+    return `${format(arg.start, 'MMM d', { locale })} - ${format(end, 'd, yyyy', { locale })}`;
   }
-  return format(arg.start, 'MMMM yyyy');
+  return format(arg.start, 'MMMM yyyy', { locale });
 }
 
 function renderEventContent(eventInfo: EventContentArg) {
@@ -87,14 +89,8 @@ function eventsForDate(events: CalendarEvent[], date: Date) {
   return events.filter((event) => isSameDay(event.start, date));
 }
 
-function statusLabel(status: string) {
-  if (status === 'overdue') return 'Overdue';
-  if (status === 'dueToday') return 'Due today';
-  if (status === 'completed') return 'Completed';
-  return 'Not submitted';
-}
-
 export function CalendarPage() {
+  const { t, dateLocale } = useI18n();
   const calendarRef = useRef<FullCalendar>(null);
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<CalendarView>('dayGridMonth');
@@ -186,15 +182,15 @@ export function CalendarPage() {
         <button type="button" onClick={() => calendarRef.current?.getApi().next()} className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
           <ChevronRight className="h-4 w-4" />
         </button>
-        <div className="min-w-0 flex-1 text-[15px] font-medium text-slate-950 md:ml-2">{formatRange(dateSet)}</div>
+        <div className="min-w-0 flex-1 text-[15px] font-medium text-slate-950 md:ml-2">{formatRange(dateSet, dateLocale)}</div>
         <button type="button" onClick={() => calendarRef.current?.getApi().today()} className="ml-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-          Today
+          {t('calendar.today')}
         </button>
         <div className="hidden flex-1 md:block" />
         {overdueCount > 0 && (
           <div className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
             <AlertCircle className="h-3.5 w-3.5" />
-            {overdueCount} overdue
+            {t('calendar.overdueCount', { count: overdueCount })}
           </div>
         )}
         <div className="flex rounded-lg border border-slate-200 bg-white p-0.5">
@@ -209,7 +205,7 @@ export function CalendarPage() {
                   : 'border-transparent text-slate-500 hover:bg-slate-50'
               }`}
             >
-              {view.label}
+              {t(view.labelKey)}
             </button>
           ))}
         </div>
@@ -238,18 +234,18 @@ export function CalendarPage() {
           <div
             role="separator"
             aria-orientation="vertical"
-            title="Resize details panel"
+            title={t('calendar.resizePanel')}
             onMouseDown={startResize}
             className="absolute inset-y-0 left-0 z-10 hidden w-2 -translate-x-1 cursor-col-resize md:block"
           />
           <div className="border-b border-slate-200 p-4">
-            <div className="text-sm font-semibold text-slate-950">{format(selectedDate, 'EEEE, MMMM d')}</div>
-            <div className="mt-1 text-xs text-slate-500">{selectedEvents.length} deadlines</div>
+            <div className="text-sm font-semibold text-slate-950">{format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}</div>
+            <div className="mt-1 text-xs text-slate-500">{t('calendar.deadlines', { count: selectedEvents.length })}</div>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {selectedEvents.length === 0 && (
               <div className="rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-500">
-                No deadlines for this day.
+                {t('calendar.noDeadlines')}
               </div>
             )}
             {selectedEvents.map((event) => {
@@ -274,14 +270,20 @@ export function CalendarPage() {
                   <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
                     <Clock className="h-3 w-3" />
                     {isSameDay(event.start, new Date())
-                      ? `Due today · ${format(event.start, 'h:mm a')}`
-                      : formatDistanceToNow(event.start, { addSuffix: true })}
+                      ? t('calendar.dueTodayAt', { time: format(event.start, 'h:mm a', { locale: dateLocale }) })
+                      : formatDistanceToNow(event.start, { addSuffix: true, locale: dateLocale })}
                   </div>
                   <span
                     className="mt-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold"
                     style={{ backgroundColor: eventColors.bg, borderColor: eventColors.border, color: eventColors.text }}
                   >
-                    {statusLabel(event.extendedProps.status)}
+                    {event.extendedProps.status === 'overdue'
+                      ? t('assignment.overdue')
+                      : event.extendedProps.status === 'dueToday'
+                        ? t('calendar.dueToday')
+                        : event.extendedProps.status === 'completed'
+                          ? t('calendar.completed')
+                          : t('calendar.notSubmitted')}
                   </span>
                 </button>
               );
