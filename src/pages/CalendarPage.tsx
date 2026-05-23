@@ -4,15 +4,16 @@ import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import type { DatesSetArg, EventClickArg, EventContentArg } from '@fullcalendar/core';
-import { AlertCircle, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Clock, MessageSquareText } from 'lucide-react';
 import { format, formatDistanceToNow, isSameDay } from 'date-fns';
 import type { Locale } from 'date-fns';
 import { MouseEvent, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssignments } from '../hooks/useAssignments';
+import { useForums } from '../hooks/useForums';
 import { useI18n, type I18nKey } from '../lib/i18n';
 import { getCourseColor } from '../lib/utils';
-import type { AssignmentWithCourse } from '../types';
+import type { AssignmentWithCourse, ForumThread } from '../types';
 import './CalendarPage.css';
 
 type CalendarView = 'dayGridMonth' | 'timeGridWeek' | 'listMonth';
@@ -29,7 +30,8 @@ interface CalendarEvent {
     courseId: number;
     courseName: string;
     status: string;
-    assignmentId: number;
+    type: 'assignment' | 'forum';
+    targetId: number;
   };
 }
 
@@ -53,12 +55,37 @@ function assignmentStatus(assignment: AssignmentWithCourse) {
   return 'upcoming';
 }
 
+function forumDueDate(thread: ForumThread) {
+  return thread.dueDate ? new Date(thread.dueDate * 1000) : null;
+}
+
+function forumStatus(thread: ForumThread) {
+  if (thread.replied) return 'completed';
+  if (thread.acceptsReplies === false) return 'closed';
+  const dueDate = forumDueDate(thread);
+  if (!dueDate) return 'upcoming';
+  const diff = dueDate.getTime() - Date.now();
+  if (diff < 0) return 'overdue';
+  if (isSameDay(dueDate, new Date())) return 'dueToday';
+  return 'upcoming';
+}
+
 function getEventColors(assignment: AssignmentWithCourse) {
   const status = assignmentStatus(assignment);
   if (status === 'overdue') return { bg: '#FCEBEB', text: '#A32D2D', border: '#F09595' };
   if (status === 'dueToday') return { bg: '#FAEEDA', text: '#854F0B', border: '#E0A93B' };
   if (status === 'completed') return { bg: '#EAF3DE', text: '#3B6D11', border: '#97C459' };
   const color = getCourseColor(assignment.course);
+  return { bg: color.light, text: color.text, border: color.dot };
+}
+
+function getForumEventColors(thread: ForumThread) {
+  const status = forumStatus(thread);
+  if (status === 'overdue') return { bg: '#FCEBEB', text: '#A32D2D', border: '#F09595' };
+  if (status === 'dueToday') return { bg: '#FAEEDA', text: '#854F0B', border: '#E0A93B' };
+  if (status === 'completed') return { bg: '#EAF3DE', text: '#3B6D11', border: '#97C459' };
+  if (status === 'closed') return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
+  const color = getCourseColor(thread.courseId);
   return { bg: color.light, text: color.text, border: color.dot };
 }
 
@@ -98,19 +125,21 @@ export function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [panelWidth, setPanelWidth] = useState(260);
   const assignmentsQuery = useAssignments();
+  const forumsQuery = useForums({ checkReplies: false });
   const assignments = useMemo(() => assignmentsQuery.data ?? [], [assignmentsQuery.data]);
+  const forumThreads = useMemo(() => forumsQuery.data ?? [], [forumsQuery.data]);
 
   const calendarEvents = useMemo<CalendarEvent[]>(
-    () =>
-      assignments.flatMap((assignment) => {
+    () => {
+      const assignmentEvents = assignments.flatMap((assignment) => {
         const dueDate = assignmentDueDate(assignment);
         if (!dueDate) return [];
         const colors = getEventColors(assignment);
         return [{
-          id: String(assignment.id),
+          id: `assignment-${assignment.id}`,
           title: assignment.name,
           start: dueDate,
-          allDay: false,
+          allDay: false as const,
           backgroundColor: colors.bg,
           textColor: colors.text,
           borderColor: colors.border,
@@ -118,15 +147,44 @@ export function CalendarPage() {
             courseId: assignment.course,
             courseName: assignment.courseName,
             status: assignmentStatus(assignment),
-            assignmentId: assignment.id,
+            type: 'assignment' as const,
+            targetId: assignment.id,
           },
         }];
-      }),
-    [assignments],
+      });
+
+      const forumEvents = forumThreads.flatMap((thread) => {
+        const dueDate = forumDueDate(thread);
+        if (!dueDate) return [];
+        const discussionId = thread.discussion ?? thread.id;
+        const colors = getForumEventColors(thread);
+        return [{
+          id: `forum-${discussionId}`,
+          title: thread.name || thread.subject || thread.forumName,
+          start: dueDate,
+          allDay: false as const,
+          backgroundColor: colors.bg,
+          textColor: colors.text,
+          borderColor: colors.border,
+          extendedProps: {
+            courseId: thread.courseId,
+            courseName: thread.courseName,
+            status: forumStatus(thread),
+            type: 'forum' as const,
+            targetId: discussionId,
+          },
+        }];
+      });
+
+      return [...assignmentEvents, ...forumEvents];
+    },
+    [assignments, forumThreads],
   );
 
   const selectedEvents = useMemo(() => eventsForDate(calendarEvents, selectedDate), [calendarEvents, selectedDate]);
-  const overdueCount = assignments.filter((assignment) => assignmentStatus(assignment) === 'overdue').length;
+  const overdueCount =
+    assignments.filter((assignment) => assignmentStatus(assignment) === 'overdue').length +
+    forumThreads.filter((thread) => forumStatus(thread) === 'overdue').length;
 
   function changeView(view: CalendarView) {
     setActiveView(view);
@@ -146,8 +204,12 @@ export function CalendarPage() {
     if (arg.event.start) setSelectedDate(arg.event.start);
   }
 
-  function openAssignment(assignmentId: number) {
-    navigate(`/assignments?assignment=${assignmentId}`);
+  function openEvent(event: CalendarEvent) {
+    if (event.extendedProps.type === 'forum') {
+      navigate(`/forums/${event.extendedProps.targetId}`);
+      return;
+    }
+    navigate(`/assignments?assignment=${event.extendedProps.targetId}`);
   }
 
   function startResize(event: MouseEvent<HTMLDivElement>) {
@@ -259,12 +321,16 @@ export function CalendarPage() {
                 <button
                   key={event.id}
                   type="button"
-                  onClick={() => openAssignment(event.extendedProps.assignmentId)}
+                  onClick={() => openEvent(event)}
                   className="mb-2 block w-full rounded-lg border border-slate-200 p-2.5 text-left hover:border-slate-300 hover:bg-slate-50"
                 >
                   <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-slate-500">
                     <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: colors.dot }} />
                     <span className="truncate">{event.extendedProps.courseName}</span>
+                  </div>
+                  <div className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                    {event.extendedProps.type === 'forum' && <MessageSquareText className="h-3 w-3" />}
+                    {event.extendedProps.type === 'forum' ? t('calendar.forumType') : t('calendar.assignmentType')}
                   </div>
                   <div className="text-xs font-medium leading-5 text-slate-950">{event.title}</div>
                   <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
@@ -283,6 +349,8 @@ export function CalendarPage() {
                         ? t('calendar.dueToday')
                         : event.extendedProps.status === 'completed'
                           ? t('calendar.completed')
+                          : event.extendedProps.status === 'closed'
+                            ? t('forums.status.closed')
                           : t('calendar.notSubmitted')}
                   </span>
                 </button>

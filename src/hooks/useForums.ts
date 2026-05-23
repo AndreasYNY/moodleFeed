@@ -6,7 +6,7 @@ import { useSettingsStore } from '../store/settings';
 import type { ForumThread } from '../types';
 import { useCourses } from './useCourses';
 
-export function useForums() {
+export function useForums({ checkReplies = true }: { checkReplies?: boolean } = {}) {
   const { baseUrl, token, userId } = useAuthStore();
   const { forumNameFilters, dismissedDiscussionIds, hiddenCourseIds } = useSettingsStore();
   const coursesQuery = useCourses();
@@ -55,6 +55,8 @@ export function useForums() {
       courseColor: courseColor(forum.course),
       replied: Boolean(userId) && (discussion.userid === userId || discussion.usermodified === userId),
       acceptsReplies: discussion.canreply !== false,
+      dueDate: discussion.duedate ?? forum.duedate,
+      cutoffDate: discussion.cutoffdate ?? forum.cutoffdate,
     }));
   });
 
@@ -70,7 +72,7 @@ export function useForums() {
   const postStatusesQuery = useQuery({
     queryKey: ['posts-batch', allDiscussionIds],
     queryFn: () => Moodle.postsBatch(baseUrl!, token!, allDiscussionIds),
-    enabled: Boolean(baseUrl && token && userId && allDiscussionIds.length),
+    enabled: Boolean(checkReplies && baseUrl && token && userId && allDiscussionIds.length),
     staleTime: 5 * 60 * 1000,
   });
   const postsByDiscussion = new Map(
@@ -81,7 +83,7 @@ export function useForums() {
     const discussionId = thread.discussion ?? thread.id;
     const posts = postsByDiscussion.get(discussionId);
     const repliedFromPosts =
-      posts?.some((post) => (post.author?.id ?? post.userid) === userId) ?? false;
+      checkReplies && (posts?.some((post) => (post.author?.id ?? post.userid) === userId) ?? false);
     const rootPost = posts?.find((post) => !post.parentid || post.parentid === 0 || post.parentid === null);
     const acceptsReplies = rootPost?.capabilities?.reply ?? thread.acceptsReplies;
 
@@ -97,6 +99,6 @@ export function useForums() {
     ...forumsQuery,
     data: threads.sort((a, b) => (b.timemodified ?? 0) - (a.timemodified ?? 0)),
     isLoading: coursesQuery.isLoading || forumsQuery.isLoading || discussionsQuery.isLoading,
-    error: coursesQuery.error || forumsQuery.error || discussionsQuery.error || postStatusesQuery.error,
+    error: coursesQuery.error || forumsQuery.error || discussionsQuery.error || (checkReplies ? postStatusesQuery.error : null),
   };
 }

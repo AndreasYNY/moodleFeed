@@ -105,6 +105,8 @@ export interface Forum {
   course: number;
   name: string;
   intro?: string;
+  duedate?: number;
+  cutoffdate?: number;
 }
 
 export interface Discussion {
@@ -122,6 +124,8 @@ export interface Discussion {
   created?: number;
   numreplies?: number;
   canreply?: boolean;
+  duedate?: number;
+  cutoffdate?: number;
 }
 
 export interface ForumThread extends Discussion {
@@ -133,6 +137,8 @@ export interface ForumThread extends Discussion {
   replied?: boolean;
   replyStatusLoading?: boolean;
   acceptsReplies?: boolean;
+  dueDate?: number;
+  cutoffDate?: number;
 }
 
 export interface ForumPost {
