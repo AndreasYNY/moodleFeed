@@ -48,6 +48,8 @@ interface Assignment {
   submissionType: 'file' | 'onlinetext' | 'both';
   status: 'overdue' | 'dueSoon' | 'upcoming' | 'completed';
   isGraded: boolean;
+  canEditSubmission?: boolean;
+  canSubmit?: boolean;
   grade?: number | string;
   gradeMax?: number;
   gradeDisplay?: string;
@@ -84,6 +86,8 @@ type LegacyAssignment = Partial<Assignment> & {
   submitted?: boolean;
   graded?: boolean;
   gradingStatus?: string;
+  canEditSubmission?: boolean;
+  canSubmit?: boolean;
   grade?: number | string;
   gradeDisplay?: string;
   feedbackText?: string;
@@ -136,9 +140,34 @@ function extractYouTubeId(text: string): string | null {
 }
 
 function extractYouTubeLinks(text: string) {
-  return [...text.matchAll(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|youtu\.be\/[A-Za-z0-9_-]{11})[^\s<"]*/g)]
+  const links = [...text.matchAll(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|youtu\.be\/[A-Za-z0-9_-]{11})[^\s<"]*/g)]
     .map((match) => ({ url: match[0], id: extractYouTubeId(match[0]) }))
     .filter((item): item is { url: string; id: string } => Boolean(item.id));
+  return [...new Map(links.map((link) => [link.id, link])).values()];
+}
+
+function youtubeWatchUrlFromEmbed(src: string) {
+  const id = src.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{11})/)?.[1];
+  return id ? `https://www.youtube.com/watch?v=${id}` : null;
+}
+
+function prepareSubmissionHtml(html: string) {
+  if (typeof window === 'undefined') return html;
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('iframe[src*="youtube.com/embed/"]').forEach((iframe) => {
+    const url = youtubeWatchUrlFromEmbed(iframe.getAttribute('src') ?? '');
+    if (!url) return;
+
+    const paragraph = doc.createElement('p');
+    const link = doc.createElement('a');
+    link.href = url;
+    link.textContent = url;
+    paragraph.append(link);
+    iframe.replaceWith(paragraph);
+  });
+
+  return doc.body.innerHTML;
 }
 
 function formatGradeValue(grade: number | string | undefined, gradeMax: number | undefined, gradeDisplay: string | undefined, fallback: string): string {
@@ -231,6 +260,8 @@ function normalizeAssignment(assignment: Assignment | LegacyAssignment, fallback
     submissionType,
     status: assignment.status ?? (submitted ? 'completed' : dueDate && dueDate * 1000 < Date.now() ? 'overdue' : 'upcoming'),
     isGraded: Boolean(assignment.isGraded || legacy.graded || legacy.gradingStatus === 'graded'),
+    canEditSubmission: assignment.canEditSubmission ?? legacy.canEditSubmission,
+    canSubmit: assignment.canSubmit ?? legacy.canSubmit,
     grade: assignment.grade ?? legacy.grade,
     gradeMax: assignment.gradeMax,
     gradeDisplay: assignment.gradeDisplay ?? legacy.gradeDisplay,
@@ -326,8 +357,16 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [dragging, setDragging] = useState(false);
   const submitted = assignment.status === 'completed';
+  const canAddMissingText =
+    submitted &&
+    !assignment.isGraded &&
+    assignment.canEditSubmission &&
+    (assignment.submissionType === 'onlinetext' || assignment.submissionType === 'both') &&
+    !stripHtml(assignment.submittedText ?? '');
+  const showSubmitFields = !submitted || canAddMissingText;
   const youtubeLinks = extractYouTubeLinks(assignment.submittedText ?? '');
 
   useEffect(() => {
@@ -375,23 +414,46 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
   const assignmentUrl = buildAssignmentUrl(baseUrl, assignment.cmid);
 
   async function handleSubmit() {
+    const html = prepareSubmissionHtml(editor?.getHTML() ?? '');
+    const plainText = stripHtml(html);
+    const usesOnlineText = assignment.submissionType === 'onlinetext' || assignment.submissionType === 'both';
+    if (usesOnlineText && !plainText) {
+      setSubmitError(t('assignment.textRequired'));
+      return;
+    }
+
     setSubmitting(true);
+    setSubmitError('');
     try {
       if (selectedFile && onSubmitFile) {
         await onSubmitFile(assignment.id, selectedFile);
       }
-      const html = editor?.getHTML() ?? '';
-      if ((assignment.submissionType === 'onlinetext' || assignment.submissionType === 'both') && onSubmitText && stripHtml(html)) {
+      if (usesOnlineText && onSubmitText) {
         await onSubmitText(assignment.id, html);
       }
       if (!onSubmitFile && !onSubmitText && baseUrl && token) {
         let itemId: number | undefined;
+        const textSubmission = usesOnlineText ? html : undefined;
         if (selectedFile) {
-          const uploaded = await uploadMoodleFile(baseUrl, token, selectedFile);
-          itemId = uploaded[0]?.itemid;
+          itemId = await Moodle.unusedDraftItemId(baseUrl, token);
+          const uploaded = await uploadMoodleFile(baseUrl, token, selectedFile, itemId);
+          itemId = uploaded[0]?.itemid ?? itemId;
         }
-        await Moodle.submitAssignment(baseUrl, token, assignment.id, stripHtml(html) ? html : undefined, itemId);
-        await queryClient.invalidateQueries();
+        await Moodle.submitAssignment(baseUrl, token, assignment.id, textSubmission, itemId);
+        await Promise.all([
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const [key, assignmentIds] = query.queryKey;
+              return key === 'assignment-submission-statuses' && Array.isArray(assignmentIds) && assignmentIds.includes(assignment.id);
+            },
+          }),
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const [key, courseIds] = query.queryKey;
+              return key === 'completion' && Array.isArray(courseIds) && courseIds.includes(assignment.courseId);
+            },
+          }),
+        ]);
       }
     } finally {
       setSubmitting(false);
@@ -487,7 +549,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
         <div className="h-full transition-all" style={{ width: progressWidth, backgroundColor: progressColor }} />
       </div>
 
-      {expanded && (submitted ? (
+      {expanded && (!showSubmitFields ? (
         <>
           <Section title={t('assignment.assignmentBrief')} defaultOpen={false}>
             <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: sanitizeHtml(assignment.description) }} />
@@ -551,7 +613,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
           </Section>
           <Section title={t('assignment.submitWork')} defaultOpen>
             <div className="space-y-3">
-              {(assignment.submissionType === 'file' || assignment.submissionType === 'both') && (
+              {!submitted && (assignment.submissionType === 'file' || assignment.submissionType === 'both') && (
                 <>
                   <input ref={fileInputRef} type="file" className="hidden" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
                   {selectedFile ? (
@@ -614,6 +676,12 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                   <div className="min-h-20 px-3 py-2 text-[13px]">
                     <EditorContent editor={editor} />
                   </div>
+                </div>
+              )}
+
+              {submitError && (
+                <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {submitError}
                 </div>
               )}
 

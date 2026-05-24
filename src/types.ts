@@ -33,6 +33,8 @@ export interface AssignmentWithCourse extends Assignment {
   courseColor: string;
   completionState?: number;
   submitted?: boolean;
+  canEditSubmission?: boolean;
+  canSubmit?: boolean;
   submissionStatus?: string;
   gradingStatus?: string;
   graded?: boolean;

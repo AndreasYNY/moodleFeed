@@ -6,7 +6,7 @@ import { useSettingsStore } from '../store/settings';
 import type { AssignmentSubmissionFile, AssignmentSubmissionStatus, AssignmentWithCourse, Course } from '../types';
 import { useCourses } from './useCourses';
 
-export function useAssignments() {
+export function useAssignments({ includeSubmissionStatuses = true }: { includeSubmissionStatuses?: boolean } = {}) {
   const { baseUrl, token, userId } = useAuthStore();
   const hiddenCourseIds = useSettingsStore((state) => state.hiddenCourseIds);
   const coursesQuery = useCourses();
@@ -55,7 +55,7 @@ export function useAssignments() {
   const submissionStatusesQuery = useQuery({
     queryKey: ['assignment-submission-statuses', assignmentIds],
     queryFn: () => Moodle.assignmentSubmissionStatuses(baseUrl!, token!, assignmentIds),
-    enabled: Boolean(baseUrl && token && assignmentIds.length),
+    enabled: Boolean(includeSubmissionStatuses && baseUrl && token && assignmentIds.length),
     staleTime: 5 * 60 * 1000,
   });
   const submissionStatusByAssignment = new Map(
@@ -69,10 +69,17 @@ export function useAssignments() {
     const submittedFiles = extractSubmissionFiles(submissionData);
     const submittedText = extractSubmissionText(submissionData);
     const feedbackText = extractFeedbackText(submissionData);
+    const hasSubmissionContent = Boolean(
+      submissionStatus === 'submitted' ||
+      submittedFiles.length ||
+      submittedText?.trim(),
+    );
 
     return {
       ...assignment,
-      submitted: assignment.submitted || submissionStatus === 'submitted',
+      submitted: submissionData ? hasSubmissionContent : assignment.submitted,
+      canEditSubmission: lastAttempt?.canedit,
+      canSubmit: lastAttempt?.cansubmit,
       submissionStatus,
       gradingStatus: lastAttempt?.gradingstatus,
       graded: lastAttempt?.graded,

@@ -101,8 +101,8 @@ async function moodleBatchCall<T>(baseUrl: string, token: string, calls: Array<B
   if (!calls.length) return [];
 
   const shouldUseProxyBatch =
-    import.meta.env.VITE_MOODLE_PROXY === 'vercel' &&
-    (import.meta.env.PROD || (import.meta.env.DEV && import.meta.env.VITE_MOODLE_BASE_URL));
+    import.meta.env.DEV ||
+    (import.meta.env.PROD && import.meta.env.VITE_MOODLE_PROXY === 'vercel');
 
   if (shouldUseProxyBatch) {
     const chunks = Array.from({ length: Math.ceil(calls.length / batchChunkSize) }, (_, index) =>
@@ -181,11 +181,11 @@ export const Moodle = {
       { forumid: forumId, sortby: 'timemodified', sortdirection: 'DESC', page: 0, perpage: 50 },
     ),
 
-  discussionsBatch: (baseUrl: string, token: string, forumIds: number[]) =>
+  discussionsBatch: (baseUrl: string, token: string, forumIds: number[], perPage = 20) =>
     moodleBatchCall(baseUrl, token, forumIds.map((forumId) => ({
       id: String(forumId),
       fn: 'mod_forum_get_forum_discussions_paginated',
-      params: { forumid: forumId, sortby: 'timemodified', sortdirection: 'DESC', page: 0, perpage: 50 },
+      params: { forumid: forumId, sortby: 'timemodified', sortdirection: 'DESC', page: 0, perpage: perPage },
       map: (data) => ({ forumId, data: data as { discussions: Discussion[] } }),
     }))),
 
@@ -216,6 +216,14 @@ export const Moodle = {
       message,
     }),
 
+  unusedDraftItemId: (baseUrl: string, token: string) =>
+    moodleCall<number | { itemid?: number }>(baseUrl, token, 'core_files_get_unused_draft_itemid')
+      .then((data) => {
+        const itemId = typeof data === 'number' ? data : data.itemid;
+        if (!itemId) throw new MoodleApiError('Moodle did not return a draft item id');
+        return itemId;
+      }),
+
   submitAssignment: (
     baseUrl: string,
     token: string,
@@ -226,7 +234,7 @@ export const Moodle = {
     moodleCall<{ warnings?: unknown[] }>(baseUrl, token, 'mod_assign_save_submission', {
       assignmentid: assignmentId,
       plugindata: {
-        onlinetext_editor: text
+        onlinetext_editor: text !== undefined
           ? { text, format: 1, itemid: 0 }
           : undefined,
         files_filemanager: fileItemId,
