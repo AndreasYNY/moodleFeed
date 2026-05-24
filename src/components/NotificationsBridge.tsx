@@ -43,8 +43,8 @@ function notifyBrowser(title: string, body: string, enabled: boolean) {
 export function NotificationsBridge() {
   const { t, dateLocale } = useI18n();
   const settings = useSettingsStore();
-  const assignmentsQuery = useAssignments();
-  const forumsQuery = useForums();
+  const assignmentsQuery = useAssignments({ includeSubmissionStatuses: false });
+  const forumsQuery = useForums({ checkReplies: false, discussionsPerForum: 10 });
   const addNotification = useNotificationsStore((state) => state.addNotification);
   const [toasts, setToasts] = useState<Toast[]>([]);
 

@@ -6,7 +6,13 @@ import { useSettingsStore } from '../store/settings';
 import type { ForumThread } from '../types';
 import { useCourses } from './useCourses';
 
-export function useForums({ checkReplies = true }: { checkReplies?: boolean } = {}) {
+interface UseForumsOptions {
+  checkReplies?: boolean;
+  discussionsPerForum?: number;
+  replyCheckLimit?: number;
+}
+
+export function useForums({ checkReplies = true, discussionsPerForum = 20, replyCheckLimit }: UseForumsOptions = {}) {
   const { baseUrl, token, userId } = useAuthStore();
   const { forumNameFilters, dismissedDiscussionIds, hiddenCourseIds } = useSettingsStore();
   const coursesQuery = useCourses();
@@ -22,8 +28,8 @@ export function useForums({ checkReplies = true }: { checkReplies?: boolean } = 
 
   const forumIds = (forumsQuery.data ?? []).map((forum) => forum.id);
   const discussionsQuery = useQuery({
-    queryKey: ['discussions-batch', forumIds],
-    queryFn: () => Moodle.discussionsBatch(baseUrl!, token!, forumIds),
+    queryKey: ['discussions-batch', forumIds, discussionsPerForum],
+    queryFn: () => Moodle.discussionsBatch(baseUrl!, token!, forumIds, discussionsPerForum),
     enabled: Boolean(baseUrl && token && forumIds.length),
   });
   const discussionsByForum = new Map(
@@ -68,36 +74,41 @@ export function useForums({ checkReplies = true }: { checkReplies?: boolean } = 
     return !compiledNameFilters.some((filter) => filter.test(discussionName));
   });
 
-  const allDiscussionIds = allThreads.map((thread) => thread.discussion ?? thread.id);
+  const sortedBaseThreads = [...baseThreads].sort((a, b) => (b.timemodified ?? 0) - (a.timemodified ?? 0));
+  const checkedDiscussionIds = sortedBaseThreads
+    .slice(0, replyCheckLimit ?? sortedBaseThreads.length)
+    .map((thread) => thread.discussion ?? thread.id);
+  const checkedDiscussionIdSet = new Set(checkedDiscussionIds);
   const postStatusesQuery = useQuery({
-    queryKey: ['posts-batch', allDiscussionIds],
-    queryFn: () => Moodle.postsBatch(baseUrl!, token!, allDiscussionIds),
-    enabled: Boolean(checkReplies && baseUrl && token && userId && allDiscussionIds.length),
+    queryKey: ['posts-batch', checkedDiscussionIds],
+    queryFn: () => Moodle.postsBatch(baseUrl!, token!, checkedDiscussionIds),
+    enabled: Boolean(checkReplies && baseUrl && token && userId && checkedDiscussionIds.length),
     staleTime: 5 * 60 * 1000,
   });
   const postsByDiscussion = new Map(
     postStatusesQuery.data?.map(({ discussionId, data }) => [discussionId, data.posts]) ?? [],
   );
 
-  const threads = baseThreads.map((thread) => {
+  const threads = sortedBaseThreads.map((thread) => {
     const discussionId = thread.discussion ?? thread.id;
+    const replyCheckEnabled = checkReplies && checkedDiscussionIdSet.has(discussionId);
     const posts = postsByDiscussion.get(discussionId);
     const repliedFromPosts =
-      checkReplies && (posts?.some((post) => (post.author?.id ?? post.userid) === userId) ?? false);
+      replyCheckEnabled && (posts?.some((post) => (post.author?.id ?? post.userid) === userId) ?? false);
     const rootPost = posts?.find((post) => !post.parentid || post.parentid === 0 || post.parentid === null);
     const acceptsReplies = rootPost?.capabilities?.reply ?? thread.acceptsReplies;
 
     return {
       ...thread,
       replied: thread.replied || repliedFromPosts,
-      replyStatusLoading: postStatusesQuery.isLoading,
+      replyStatusLoading: replyCheckEnabled && postStatusesQuery.isLoading,
       acceptsReplies,
     };
   });
 
   return {
     ...forumsQuery,
-    data: threads.sort((a, b) => (b.timemodified ?? 0) - (a.timemodified ?? 0)),
+    data: threads,
     isLoading: coursesQuery.isLoading || forumsQuery.isLoading || discussionsQuery.isLoading,
     error: coursesQuery.error || forumsQuery.error || discussionsQuery.error || (checkReplies ? postStatusesQuery.error : null),
   };

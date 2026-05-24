@@ -124,8 +124,8 @@ export function CalendarPage() {
   const [dateSet, setDateSet] = useState<DatesSetArg>();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [panelWidth, setPanelWidth] = useState(260);
-  const assignmentsQuery = useAssignments();
-  const forumsQuery = useForums({ checkReplies: false });
+  const assignmentsQuery = useAssignments({ includeSubmissionStatuses: false });
+  const forumsQuery = useForums({ checkReplies: false, discussionsPerForum: 50 });
   const assignments = useMemo(() => assignmentsQuery.data ?? [], [assignmentsQuery.data]);
   const forumThreads = useMemo(() => forumsQuery.data ?? [], [forumsQuery.data]);
 

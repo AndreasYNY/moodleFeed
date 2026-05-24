@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink, EyeOff, MessageCircle, MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForums } from '../hooks/useForums';
 import { useAuthErrorRedirect } from '../hooks/auth-guard';
@@ -14,6 +14,7 @@ import { SkeletonCard } from './SkeletonCard';
 
 const groups = ['notReplied', 'checking', 'replied', 'closed'] as const;
 const filters = ['all', ...groups] as const;
+const pageSize = 20;
 const replyLabels: Record<(typeof groups)[number], I18nKey> & { all: I18nKey } = {
   all: 'forums.filter.all',
   notReplied: 'forums.status.notReplied',
@@ -38,26 +39,48 @@ function replyBadgeClass(label: ReturnType<typeof replyLabel>) {
 
 export function ForumFeed() {
   const { t, dateLocale } = useI18n();
-  const query = useForums();
+  const [visibleCount, setVisibleCount] = useState(pageSize);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const query = useForums({ replyCheckLimit: visibleCount });
   const baseUrl = useAuthStore((state) => state.baseUrl);
   const dismissDiscussion = useSettingsStore((state) => state.dismissDiscussion);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [filter, setFilter] = useState<(typeof filters)[number]>('all');
   useAuthErrorRedirect(query.error);
 
+  const threads = query.data ?? [];
+  const filteredThreads = threads.filter((thread) => filter === 'all' || replyLabel(thread) === filter);
+  const visibleThreads = filteredThreads.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredThreads.length;
+  const counts = filters.reduce<Record<string, number>>((acc, item) => {
+    acc[item] = item === 'all' ? threads.length : threads.filter((thread) => replyLabel(thread) === item).length;
+    return acc;
+  }, {});
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount((current) => Math.min(current + pageSize, filteredThreads.length));
+        }
+      },
+      { rootMargin: '240px 0px' },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [filteredThreads.length, hasMore]);
+
   if (query.isLoading) {
     return <div className="space-y-3">{Array.from({ length: 6 }, (_, index) => <SkeletonCard key={index} />)}</div>;
   }
 
-  if (!query.data?.length) {
+  if (!threads.length) {
     return <EmptyState title={t('forums.emptyTitle')} body={t('forums.emptyBody')} />;
   }
-
-  const filteredThreads = query.data.filter((thread) => filter === 'all' || replyLabel(thread) === filter);
-  const counts = filters.reduce<Record<string, number>>((acc, item) => {
-    acc[item] = item === 'all' ? query.data.length : query.data.filter((thread) => replyLabel(thread) === item).length;
-    return acc;
-  }, {});
 
   return (
     <div className="space-y-5">
@@ -65,7 +88,10 @@ export function ForumFeed() {
         {filters.map((item) => (
           <button
             key={item}
-            onClick={() => setFilter(item)}
+            onClick={() => {
+              setFilter(item);
+              setVisibleCount(pageSize);
+            }}
             className={cn(
               'rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-slate-200',
               filter === item ? 'bg-brand text-white ring-brand' : 'bg-white text-slate-600',
@@ -82,7 +108,7 @@ export function ForumFeed() {
       )}
 
       {groups.map((group) => {
-        const threads = filteredThreads.filter((thread) => replyLabel(thread) === group);
+        const threads = visibleThreads.filter((thread) => replyLabel(thread) === group);
         if (!threads.length) return null;
 
         return (
@@ -159,6 +185,14 @@ export function ForumFeed() {
           </section>
         );
       })}
+
+      {hasMore && (
+        <div ref={loadMoreRef} className="flex flex-wrap items-center justify-center gap-3 py-2">
+          <span className="text-xs font-medium text-slate-500">
+            {t('forums.showing', { shown: Math.min(visibleCount, filteredThreads.length), total: filteredThreads.length })}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
