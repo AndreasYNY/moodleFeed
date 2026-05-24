@@ -88,57 +88,6 @@ export async function moodleCall<T>(
   return parseMoodleResponse<T>(response);
 }
 
-type BatchCall<T> = {
-  id: string;
-  fn: string;
-  params?: Record<string, unknown>;
-  map: (data: unknown) => T;
-};
-
-const batchChunkSize = 20;
-
-async function moodleBatchCall<T>(baseUrl: string, token: string, calls: Array<BatchCall<T>>) {
-  if (!calls.length) return [];
-
-  const shouldUseProxyBatch =
-    import.meta.env.DEV ||
-    (import.meta.env.PROD && import.meta.env.VITE_MOODLE_PROXY === 'vercel');
-
-  if (shouldUseProxyBatch) {
-    const chunks = Array.from({ length: Math.ceil(calls.length / batchChunkSize) }, (_, index) =>
-      calls.slice(index * batchChunkSize, (index + 1) * batchChunkSize),
-    );
-    const responses = await Promise.all(chunks.map((chunk) => fetch('/api/moodle/batch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        baseUrl: baseUrl.replace(/\/$/, ''),
-        token,
-        calls: chunk.map(({ id, fn, params }) => ({ id, fn, params })),
-      }),
-    })));
-
-    const payloads = await Promise.all(responses.map(async (response) => {
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) throw new MoodleApiError(payload?.error || 'Moodle batch request failed');
-      return payload;
-    }));
-
-    const resultById = new Map<string, { ok: boolean; data?: unknown; error?: string; errorcode?: string; exception?: string }>(
-      payloads.flatMap((payload) => payload.results ?? [])
-        .map((result: { id: string; ok: boolean; data?: unknown; error?: string; errorcode?: string; exception?: string }) => [result.id, result]),
-    );
-
-    return calls.map((call) => {
-      const result = resultById.get(call.id);
-      if (!result?.ok) throw new MoodleApiError(result?.error || 'Moodle batch item failed', result?.errorcode, result?.exception);
-      return call.map(result.data);
-    });
-  }
-
-  return Promise.all(calls.map((call) => moodleCall<unknown>(baseUrl, token, call.fn, call.params).then(call.map)));
-}
-
 export const Moodle = {
   siteInfo: (baseUrl: string, token: string) =>
     moodleCall<SiteInfo>(baseUrl, token, 'core_webservice_get_site_info'),
@@ -163,12 +112,14 @@ export const Moodle = {
     ),
 
   completions: (baseUrl: string, token: string, courseIds: number[], userId: number) =>
-    moodleBatchCall(baseUrl, token, courseIds.map((courseId) => ({
-      id: String(courseId),
-      fn: 'core_completion_get_activities_completion_status',
-      params: { courseid: courseId, userid: userId },
-      map: (data) => ({ courseId, data: data as { statuses: Array<{ cmid: number; state: number; timecompleted?: number }> } }),
-    }))),
+    Promise.all(courseIds.map((courseId) =>
+      moodleCall<{ statuses: Array<{ cmid: number; state: number; timecompleted?: number }> }>(
+        baseUrl,
+        token,
+        'core_completion_get_activities_completion_status',
+        { courseid: courseId, userid: userId },
+      ).then((data) => ({ courseId, data })),
+    )),
 
   forums: (baseUrl: string, token: string, courseIds: number[]) =>
     moodleCall<Forum[]>(baseUrl, token, 'mod_forum_get_forums_by_courses', { courseids: courseIds }),
@@ -181,26 +132,27 @@ export const Moodle = {
       { forumid: forumId, sortby: 'timemodified', sortdirection: 'DESC', page: 0, perpage: 50 },
     ),
 
-  discussionsBatch: (baseUrl: string, token: string, forumIds: number[], perPage = 20) =>
-    moodleBatchCall(baseUrl, token, forumIds.map((forumId) => ({
-      id: String(forumId),
-      fn: 'mod_forum_get_forum_discussions_paginated',
-      params: { forumid: forumId, sortby: 'timemodified', sortdirection: 'DESC', page: 0, perpage: perPage },
-      map: (data) => ({ forumId, data: data as { discussions: Discussion[] } }),
-    }))),
+  discussionsForForums: (baseUrl: string, token: string, forumIds: number[], perPage = 20) =>
+    Promise.all(forumIds.map((forumId) =>
+      moodleCall<{ discussions: Discussion[] }>(
+        baseUrl,
+        token,
+        'mod_forum_get_forum_discussions_paginated',
+        { forumid: forumId, sortby: 'timemodified', sortdirection: 'DESC', page: 0, perpage: perPage },
+      ).then((data) => ({ forumId, data })),
+    )),
 
   posts: (baseUrl: string, token: string, discussionId: number) =>
     moodleCall<{ posts: ForumPost[] }>(baseUrl, token, 'mod_forum_get_discussion_posts', {
       discussionid: discussionId,
     }),
 
-  postsBatch: (baseUrl: string, token: string, discussionIds: number[]) =>
-    moodleBatchCall(baseUrl, token, discussionIds.map((discussionId) => ({
-      id: String(discussionId),
-      fn: 'mod_forum_get_discussion_posts',
-      params: { discussionid: discussionId },
-      map: (data) => ({ discussionId, data: data as { posts: ForumPost[] } }),
-    }))),
+  postsForDiscussions: (baseUrl: string, token: string, discussionIds: number[]) =>
+    Promise.all(discussionIds.map((discussionId) =>
+      moodleCall<{ posts: ForumPost[] }>(baseUrl, token, 'mod_forum_get_discussion_posts', {
+        discussionid: discussionId,
+      }).then((data) => ({ discussionId, data })),
+    )),
 
   reply: (baseUrl: string, token: string, postId: number, subject: string, message: string) =>
     moodleCall<{ postid: number; warnings?: unknown[] }>(baseUrl, token, 'mod_forum_add_discussion_post', {
@@ -247,10 +199,9 @@ export const Moodle = {
     }),
 
   assignmentSubmissionStatuses: (baseUrl: string, token: string, assignmentIds: number[]) =>
-    moodleBatchCall(baseUrl, token, assignmentIds.map((assignmentId) => ({
-      id: String(assignmentId),
-      fn: 'mod_assign_get_submission_status',
-      params: { assignid: assignmentId },
-      map: (data) => ({ assignmentId, data: data as AssignmentSubmissionStatus }),
-    }))),
+    Promise.all(assignmentIds.map((assignmentId) =>
+      moodleCall<AssignmentSubmissionStatus>(baseUrl, token, 'mod_assign_get_submission_status', {
+        assignid: assignmentId,
+      }).then((data) => ({ assignmentId, data })),
+    )),
 };

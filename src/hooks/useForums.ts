@@ -28,8 +28,8 @@ export function useForums({ checkReplies = true, discussionsPerForum = 20, reply
 
   const forumIds = (forumsQuery.data ?? []).map((forum) => forum.id);
   const discussionsQuery = useQuery({
-    queryKey: ['discussions-batch', forumIds, discussionsPerForum],
-    queryFn: () => Moodle.discussionsBatch(baseUrl!, token!, forumIds, discussionsPerForum),
+    queryKey: ['discussions', forumIds, discussionsPerForum],
+    queryFn: () => Moodle.discussionsForForums(baseUrl!, token!, forumIds, discussionsPerForum),
     enabled: Boolean(baseUrl && token && forumIds.length),
   });
   const discussionsByForum = new Map(
@@ -80,8 +80,8 @@ export function useForums({ checkReplies = true, discussionsPerForum = 20, reply
     .map((thread) => thread.discussion ?? thread.id);
   const checkedDiscussionIdSet = new Set(checkedDiscussionIds);
   const postStatusesQuery = useQuery({
-    queryKey: ['posts-batch', checkedDiscussionIds],
-    queryFn: () => Moodle.postsBatch(baseUrl!, token!, checkedDiscussionIds),
+    queryKey: ['posts', checkedDiscussionIds],
+    queryFn: () => Moodle.postsForDiscussions(baseUrl!, token!, checkedDiscussionIds),
     enabled: Boolean(checkReplies && baseUrl && token && userId && checkedDiscussionIds.length),
     staleTime: 5 * 60 * 1000,
   });

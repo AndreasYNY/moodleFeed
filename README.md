@@ -54,17 +54,6 @@ Students sign in with their Moodle URL, username, and password. MoodleFeed store
 
 Advanced login also supports Moodle's mobile launch flow. Where supported, MoodleFeed can register a `web+moodlefeed` protocol handler and receive Moodle's mobile app token redirect. A paste fallback is available for `moodlemobile://token=...` links.
 
-## Request Batching
-
-MoodleFeed can batch high-volume read checks through `/api/moodle/batch` when the Vercel proxy is enabled. This reduces Vercel function invocations for expensive screens like forums and assignments.
-
-Current batched groups include:
-
-- course completion checks
-- assignment submission statuses
-- forum discussion listings
-- forum post/reply checks
-
 ## Environment
 
 Create a local env file when using the Vite development proxy:
