@@ -54,10 +54,14 @@ interface Assignment {
   gradeMax?: number;
   gradeDisplay?: string;
   feedbackText?: string;
+  maxFiles?: number;
+  maxFileBytes?: number;
+  acceptedFileTypes?: string;
   briefFiles?: SubmittedFile[];
   submittedFiles?: SubmittedFile[];
   submittedText?: string;
   description?: string;
+  configs?: Array<{ plugin: string; subtype: string; name: string; value: string }>;
 }
 
 interface SubmittedFile {
@@ -70,6 +74,7 @@ interface SubmittedFile {
 interface AssignmentCardProps {
   assignment: Assignment | LegacyAssignment;
   onSubmitFile?: (assignmentId: number, file: File) => Promise<void>;
+  onSubmitFiles?: (assignmentId: number, files: File[]) => Promise<void>;
   onSubmitText?: (assignmentId: number, html: string) => Promise<void>;
   defaultExpanded?: boolean;
 }
@@ -91,6 +96,9 @@ type LegacyAssignment = Partial<Assignment> & {
   grade?: number | string;
   gradeDisplay?: string;
   feedbackText?: string;
+  maxFiles?: number;
+  maxFileBytes?: number;
+  acceptedFileTypes?: string;
   briefFiles?: SubmittedFile[];
   submittedFiles?: SubmittedFile[];
   submittedText?: string;
@@ -113,6 +121,54 @@ function formatFileSize(bytes = 0): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function configValue(
+  configs: LegacyAssignment['configs'] | undefined,
+  plugin: string,
+  names: string[],
+): string | undefined {
+  return configs?.find((config) => config.plugin === plugin && names.includes(config.name))?.value;
+}
+
+function pluginEnabled(configs: LegacyAssignment['configs'] | undefined, plugin: string): boolean {
+  const enabled = configValue(configs, plugin, ['enabled']);
+  if (enabled !== undefined) return enabled === '1';
+  return configs?.some((config) => config.plugin === plugin && config.value === '1') ?? false;
+}
+
+function parsePositiveInteger(value: string | number | undefined): number | undefined {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function normalizeAcceptedFileTypes(value?: string): string | undefined {
+  if (!value?.trim()) return undefined;
+  const parts = value
+    .split(/[\s,;]+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      if (part === '*') return '';
+      if (part.startsWith('.') || part.includes('/')) return part;
+      if (/^[a-z0-9]+$/i.test(part)) return `.${part}`;
+      return '';
+    })
+    .filter(Boolean);
+  return parts.length ? [...new Set(parts)].join(',') : undefined;
+}
+
+function fileMatchesAcceptedTypes(file: File, acceptedFileTypes?: string): boolean {
+  if (!acceptedFileTypes) return true;
+  const fileName = file.name.toLowerCase();
+  const fileType = file.type.toLowerCase();
+  return acceptedFileTypes.split(',').some((rawType) => {
+    const type = rawType.trim().toLowerCase();
+    if (!type) return false;
+    if (type.startsWith('.')) return fileName.endsWith(type);
+    if (type.endsWith('/*')) return fileType.startsWith(type.slice(0, -1));
+    return fileType === type;
+  });
 }
 
 function stripHtml(html: string): string {
@@ -240,14 +296,27 @@ function normalizeAssignment(assignment: Assignment | LegacyAssignment, fallback
   const courseId = assignment.courseId ?? legacy.course ?? 0;
   const dueDate = assignment.dueDate ?? legacy.duedate ?? 0;
   const submitted = Boolean(assignment.status === 'completed' || legacy.submitted);
+  const fileEnabled = pluginEnabled(assignment.configs, 'file');
+  const textEnabled = pluginEnabled(assignment.configs, 'onlinetext');
   const submissionType =
     assignment.submissionType ??
-    (assignment.configs?.some((config) => config.plugin === 'file' && config.value === '1') &&
-    assignment.configs?.some((config) => config.plugin === 'onlinetext' && config.value === '1')
+    (fileEnabled && textEnabled
       ? 'both'
-      : assignment.configs?.some((config) => config.plugin === 'onlinetext' && config.value === '1')
+      : textEnabled
         ? 'onlinetext'
         : 'file');
+  const maxFiles =
+    assignment.maxFiles ??
+    legacy.maxFiles ??
+    parsePositiveInteger(configValue(assignment.configs, 'file', ['maxfilesubmissions', 'maxfiles']));
+  const maxFileBytes =
+    assignment.maxFileBytes ??
+    legacy.maxFileBytes ??
+    parsePositiveInteger(configValue(assignment.configs, 'file', ['maxsubmissionsize', 'maxbytes', 'maxfilesize']));
+  const acceptedFileTypes =
+    assignment.acceptedFileTypes ??
+    legacy.acceptedFileTypes ??
+    normalizeAcceptedFileTypes(configValue(assignment.configs, 'file', ['filetypeslist', 'filetypes']));
 
   return {
     id: assignment.id,
@@ -266,6 +335,9 @@ function normalizeAssignment(assignment: Assignment | LegacyAssignment, fallback
     gradeMax: assignment.gradeMax,
     gradeDisplay: assignment.gradeDisplay ?? legacy.gradeDisplay,
     feedbackText: assignment.feedbackText ?? legacy.feedbackText,
+    maxFiles,
+    maxFileBytes,
+    acceptedFileTypes,
     briefFiles: assignment.briefFiles ?? legacy.briefFiles ?? legacy.introattachments ?? legacy.introfiles ?? [],
     submittedFiles: assignment.submittedFiles ?? legacy.submittedFiles ?? [],
     submittedText: assignment.submittedText ?? legacy.submittedText,
@@ -347,7 +419,7 @@ function AttachmentList({ files, token, openFileLabel }: { files?: SubmittedFile
   );
 }
 
-export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubmitText, defaultExpanded = false }: AssignmentCardProps) {
+export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubmitFiles, onSubmitText, defaultExpanded = false }: AssignmentCardProps) {
   const { t, dateLocale } = useI18n();
   const assignment = useMemo(() => normalizeAssignment(rawAssignment, t('common.course')), [rawAssignment, t]);
   const courseColor = getCourseColor(assignment.courseId);
@@ -355,7 +427,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
   const queryClient = useQueryClient();
   const { baseUrl, token } = useAuthStore();
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [dragging, setDragging] = useState(false);
@@ -368,6 +440,13 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
     !stripHtml(assignment.submittedText ?? '');
   const showSubmitFields = !submitted || canAddMissingText;
   const youtubeLinks = extractYouTubeLinks(assignment.submittedText ?? '');
+  const maxFiles = assignment.maxFiles ?? 1;
+  const maxFileBytes = assignment.maxFileBytes;
+  const fileLimitLabel = t('assignment.fileLimit', {
+    count: maxFiles,
+    size: maxFileBytes ? formatFileSize(maxFileBytes) : t('assignment.fileSizeMoodleDefault'),
+  });
+  const acceptedFileTypesLabel = assignment.acceptedFileTypes?.replace(/,/g, ', ') ?? t('assignment.anyFileType');
 
   useEffect(() => {
     if (defaultExpanded) setExpanded(true);
@@ -417,27 +496,44 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
     const html = prepareSubmissionHtml(editor?.getHTML() ?? '');
     const plainText = stripHtml(html);
     const usesOnlineText = assignment.submissionType === 'onlinetext' || assignment.submissionType === 'both';
+    const usesFile = assignment.submissionType === 'file' || assignment.submissionType === 'both';
+    if (usesFile && !submitted && !selectedFiles.length) {
+      setSubmitError(t('assignment.fileRequired'));
+      return;
+    }
     if (usesOnlineText && !plainText) {
       setSubmitError(t('assignment.textRequired'));
+      return;
+    }
+    const invalidFile = selectedFiles.find((file) => {
+      if (maxFileBytes && file.size > maxFileBytes) return true;
+      return !fileMatchesAcceptedTypes(file, assignment.acceptedFileTypes);
+    });
+    if (invalidFile) {
+      setSubmitError(t('assignment.fileInvalid', { name: invalidFile.name, size: maxFileBytes ? formatFileSize(maxFileBytes) : acceptedFileTypesLabel }));
       return;
     }
 
     setSubmitting(true);
     setSubmitError('');
     try {
-      if (selectedFile && onSubmitFile) {
-        await onSubmitFile(assignment.id, selectedFile);
+      if (selectedFiles.length && onSubmitFiles) {
+        await onSubmitFiles(assignment.id, selectedFiles);
+      } else if (selectedFiles.length && onSubmitFile) {
+        await Promise.all(selectedFiles.map((file) => onSubmitFile(assignment.id, file)));
       }
       if (usesOnlineText && onSubmitText) {
         await onSubmitText(assignment.id, html);
       }
-      if (!onSubmitFile && !onSubmitText && baseUrl && token) {
+      if (!onSubmitFile && !onSubmitFiles && !onSubmitText && baseUrl && token) {
         let itemId: number | undefined;
         const textSubmission = usesOnlineText ? html : undefined;
-        if (selectedFile) {
+        if (selectedFiles.length) {
           itemId = await Moodle.unusedDraftItemId(baseUrl, token);
-          const uploaded = await uploadMoodleFile(baseUrl, token, selectedFile, itemId);
-          itemId = uploaded[0]?.itemid ?? itemId;
+          for (const file of selectedFiles) {
+            const uploaded = await uploadMoodleFile(baseUrl, token, file, itemId);
+            itemId = uploaded[0]?.itemid ?? itemId;
+          }
         }
         await Moodle.submitAssignment(baseUrl, token, assignment.id, textSubmission, itemId);
         await Promise.all([
@@ -454,7 +550,10 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
             },
           }),
         ]);
+        setSelectedFiles([]);
       }
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : t('error.uploadFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -463,8 +562,30 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setDragging(false);
-    const file = event.dataTransfer.files[0];
-    if (file) setSelectedFile(file);
+    addSelectedFiles(event.dataTransfer.files);
+  }
+
+  function addSelectedFiles(fileList: FileList | null) {
+    const incoming = Array.from(fileList ?? []);
+    if (!incoming.length) return;
+
+    const nextFiles = [...selectedFiles];
+    for (const file of incoming) {
+      if (nextFiles.length >= maxFiles) break;
+      const duplicate = nextFiles.some((selectedFile) =>
+        selectedFile.name === file.name &&
+        selectedFile.size === file.size &&
+        selectedFile.lastModified === file.lastModified,
+      );
+      if (!duplicate) nextFiles.push(file);
+    }
+
+    setSelectedFiles(nextFiles);
+    if (incoming.length + selectedFiles.length > maxFiles) {
+      setSubmitError(t('assignment.fileCountLimit', { count: maxFiles }));
+    } else {
+      setSubmitError('');
+    }
   }
 
   async function pasteYoutubeFromClipboard() {
@@ -615,33 +736,62 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
             <div className="space-y-3">
               {!submitted && (assignment.submissionType === 'file' || assignment.submissionType === 'both') && (
                 <>
-                  <input ref={fileInputRef} type="file" className="hidden" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
-                  {selectedFile ? (
-                    <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                      <FileText className="h-4 w-4 text-brand" />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-slate-800">{selectedFile.name}</div>
-                        <div className="text-xs text-slate-500">{formatFileSize(selectedFile.size)}</div>
-                      </div>
-                      <button type="button" onClick={() => setSelectedFile(null)} className="rounded-lg p-1 text-slate-400 hover:bg-white" title={t('assignment.removeFile')}>
-                        <X className="h-4 w-4" />
-                      </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    multiple={maxFiles > 1}
+                    accept={assignment.acceptedFileTypes}
+                    onChange={(event) => {
+                      addSelectedFiles(event.target.files);
+                      event.target.value = '';
+                    }}
+                  />
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDrop={handleDrop}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setDragging(true);
+                    }}
+                    onDragLeave={() => setDragging(false)}
+                    className={`cursor-pointer rounded-xl border border-dashed p-5 text-center ${dragging ? 'bg-slate-100' : 'bg-slate-50'}`}
+                    style={{ borderWidth: 1.5 }}
+                  >
+                    <UploadCloud className="mx-auto h-6 w-6 text-slate-400" />
+                    <div className="mt-2 text-sm font-medium text-slate-700">
+                      {selectedFiles.length ? t('assignment.addMoreFiles') : t('assignment.dropChooseFile')}
                     </div>
-                  ) : (
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      onDrop={handleDrop}
-                      onDragOver={(event) => {
-                        event.preventDefault();
-                        setDragging(true);
-                      }}
-                      onDragLeave={() => setDragging(false)}
-                      className={`cursor-pointer rounded-xl border border-dashed p-5 text-center ${dragging ? 'bg-slate-100' : 'bg-slate-50'}`}
-                      style={{ borderWidth: 1.5 }}
-                    >
-                      <UploadCloud className="mx-auto h-6 w-6 text-slate-400" />
-                      <div className="mt-2 text-sm font-medium text-slate-700">{t('assignment.dropChooseFile')}</div>
-                      <div className="mt-1 text-xs text-slate-500">{t('assignment.fileHint')}</div>
+                    <div className="mt-1 text-xs text-slate-500">{fileLimitLabel}</div>
+                    <div className="mt-1 text-xs text-slate-500">{t('assignment.allowedTypes', { types: acceptedFileTypesLabel })}</div>
+                  </div>
+                  {selectedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {selectedFiles.map((file) => {
+                        const tooLarge = Boolean(maxFileBytes && file.size > maxFileBytes);
+                        const invalidType = !fileMatchesAcceptedTypes(file, assignment.acceptedFileTypes);
+                        return (
+                          <div key={`${file.name}-${file.size}-${file.lastModified}`} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                            <FileText className={`h-4 w-4 ${tooLarge || invalidType ? 'text-red-500' : 'text-brand'}`} />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium text-slate-800">{file.name}</div>
+                              <div className={`text-xs ${tooLarge || invalidType ? 'text-red-600' : 'text-slate-500'}`}>
+                                {formatFileSize(file.size)}
+                                {tooLarge ? ` · ${t('assignment.fileTooLarge')}` : ''}
+                                {invalidType ? ` · ${t('assignment.fileTypeNotAllowed')}` : ''}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedFiles((files) => files.filter((selectedFile) => selectedFile !== file))}
+                              className="rounded-lg p-1 text-slate-400 hover:bg-white"
+                              title={t('assignment.removeFile')}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </>
