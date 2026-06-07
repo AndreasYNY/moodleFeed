@@ -4,16 +4,17 @@ import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import type { DatesSetArg, EventClickArg, EventContentArg } from '@fullcalendar/core';
-import { AlertCircle, ChevronLeft, ChevronRight, Clock, MessageSquareText } from 'lucide-react';
+import { AlertCircle, BookOpen, ChevronLeft, ChevronRight, Clock, MessageSquareText } from 'lucide-react';
 import { format, formatDistanceToNow, isSameDay } from 'date-fns';
 import type { Locale } from 'date-fns';
 import { MouseEvent, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssignments } from '../hooks/useAssignments';
 import { useForums } from '../hooks/useForums';
+import { useLessons } from '../hooks/useLessons';
 import { useI18n, type I18nKey } from '../lib/i18n';
 import { getCourseColor } from '../lib/utils';
-import type { AssignmentWithCourse, ForumThread } from '../types';
+import type { AssignmentWithCourse, ForumThread, LessonWithCourse } from '../types';
 import './CalendarPage.css';
 
 type CalendarView = 'dayGridMonth' | 'timeGridWeek' | 'listMonth';
@@ -30,7 +31,7 @@ interface CalendarEvent {
     courseId: number;
     courseName: string;
     status: string;
-    type: 'assignment' | 'forum';
+    type: 'assignment' | 'forum' | 'lesson';
     targetId: number;
   };
 }
@@ -70,6 +71,21 @@ function forumStatus(thread: ForumThread) {
   return 'upcoming';
 }
 
+function lessonDueDate(lesson: LessonWithCourse) {
+  return lesson.deadline ? new Date(lesson.deadline * 1000) : null;
+}
+
+function lessonStatus(lesson: LessonWithCourse) {
+  if (lesson.completed) return 'completed';
+  if (lesson.accessInfo?.preventaccessreasons?.length) return 'closed';
+  const dueDate = lessonDueDate(lesson);
+  if (!dueDate) return 'upcoming';
+  const diff = dueDate.getTime() - Date.now();
+  if (diff < 0) return 'overdue';
+  if (isSameDay(dueDate, new Date())) return 'dueToday';
+  return 'upcoming';
+}
+
 function getEventColors(assignment: AssignmentWithCourse) {
   const status = assignmentStatus(assignment);
   if (status === 'overdue') return { bg: '#FCEBEB', text: '#A32D2D', border: '#F09595' };
@@ -86,6 +102,16 @@ function getForumEventColors(thread: ForumThread) {
   if (status === 'completed') return { bg: '#EAF3DE', text: '#3B6D11', border: '#97C459' };
   if (status === 'closed') return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
   const color = getCourseColor(thread.courseId);
+  return { bg: color.light, text: color.text, border: color.dot };
+}
+
+function getLessonEventColors(lesson: LessonWithCourse) {
+  const status = lessonStatus(lesson);
+  if (status === 'overdue') return { bg: '#FCEBEB', text: '#A32D2D', border: '#F09595' };
+  if (status === 'dueToday') return { bg: '#FAEEDA', text: '#854F0B', border: '#E0A93B' };
+  if (status === 'completed') return { bg: '#EAF3DE', text: '#3B6D11', border: '#97C459' };
+  if (status === 'closed') return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
+  const color = getCourseColor(lesson.course);
   return { bg: color.light, text: color.text, border: color.dot };
 }
 
@@ -126,8 +152,10 @@ export function CalendarPage() {
   const [panelWidth, setPanelWidth] = useState(260);
   const assignmentsQuery = useAssignments({ includeSubmissionStatuses: false });
   const forumsQuery = useForums({ checkReplies: false, discussionsPerForum: 50 });
+  const lessonsQuery = useLessons({ includeCompletions: false, includeAccessInfo: false });
   const assignments = useMemo(() => assignmentsQuery.data ?? [], [assignmentsQuery.data]);
   const forumThreads = useMemo(() => forumsQuery.data ?? [], [forumsQuery.data]);
+  const lessons = useMemo(() => lessonsQuery.data ?? [], [lessonsQuery.data]);
 
   const calendarEvents = useMemo<CalendarEvent[]>(
     () => {
@@ -176,15 +204,38 @@ export function CalendarPage() {
         }];
       });
 
-      return [...assignmentEvents, ...forumEvents];
+      const lessonEvents = lessons.flatMap((lesson) => {
+        const dueDate = lessonDueDate(lesson);
+        if (!dueDate) return [];
+        const colors = getLessonEventColors(lesson);
+        return [{
+          id: `lesson-${lesson.coursemodule}`,
+          title: lesson.name,
+          start: dueDate,
+          allDay: false as const,
+          backgroundColor: colors.bg,
+          textColor: colors.text,
+          borderColor: colors.border,
+          extendedProps: {
+            courseId: lesson.course,
+            courseName: lesson.courseName,
+            status: lessonStatus(lesson),
+            type: 'lesson' as const,
+            targetId: lesson.coursemodule,
+          },
+        }];
+      });
+
+      return [...assignmentEvents, ...forumEvents, ...lessonEvents];
     },
-    [assignments, forumThreads],
+    [assignments, forumThreads, lessons],
   );
 
   const selectedEvents = useMemo(() => eventsForDate(calendarEvents, selectedDate), [calendarEvents, selectedDate]);
   const overdueCount =
     assignments.filter((assignment) => assignmentStatus(assignment) === 'overdue').length +
-    forumThreads.filter((thread) => forumStatus(thread) === 'overdue').length;
+    forumThreads.filter((thread) => forumStatus(thread) === 'overdue').length +
+    lessons.filter((lesson) => lessonStatus(lesson) === 'overdue').length;
 
   function changeView(view: CalendarView) {
     setActiveView(view);
@@ -207,6 +258,10 @@ export function CalendarPage() {
   function openEvent(event: CalendarEvent) {
     if (event.extendedProps.type === 'forum') {
       navigate(`/forums/${event.extendedProps.targetId}`);
+      return;
+    }
+    if (event.extendedProps.type === 'lesson') {
+      navigate(`/lessons/${event.extendedProps.targetId}`);
       return;
     }
     navigate(`/assignments?assignment=${event.extendedProps.targetId}`);
@@ -330,7 +385,12 @@ export function CalendarPage() {
                   </div>
                   <div className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                     {event.extendedProps.type === 'forum' && <MessageSquareText className="h-3 w-3" />}
-                    {event.extendedProps.type === 'forum' ? t('calendar.forumType') : t('calendar.assignmentType')}
+                    {event.extendedProps.type === 'lesson' && <BookOpen className="h-3 w-3" />}
+                    {event.extendedProps.type === 'forum'
+                      ? t('calendar.forumType')
+                      : event.extendedProps.type === 'lesson'
+                        ? t('calendar.lessonType')
+                      : t('calendar.assignmentType')}
                   </div>
                   <div className="text-xs font-medium leading-5 text-slate-950">{event.title}</div>
                   <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
