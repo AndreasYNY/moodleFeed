@@ -41,14 +41,17 @@ export function ForumFeed() {
   const { t, dateLocale } = useI18n();
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const query = useForums({ replyCheckLimit: visibleCount });
+  const initialDismissedIdsRef = useRef(useSettingsStore.getState().dismissedDiscussionIds);
+  const [dismissedIds, setDismissedIds] = useState(initialDismissedIdsRef.current);
+  const dismissedIdSet = new Set(dismissedIds);
+  const query = useForums({ replyCheckLimit: visibleCount, ignoredDiscussionIds: initialDismissedIdsRef.current });
   const baseUrl = useAuthStore((state) => state.baseUrl);
   const dismissDiscussion = useSettingsStore((state) => state.dismissDiscussion);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [filter, setFilter] = useState<(typeof filters)[number]>('all');
   useAuthErrorRedirect(query.error);
 
-  const threads = query.data ?? [];
+  const threads = (query.data ?? []).filter((thread) => !dismissedIdSet.has(thread.discussion ?? thread.id));
   const filteredThreads = threads.filter((thread) => filter === 'all' || replyLabel(thread) === filter);
   const visibleThreads = filteredThreads.slice(0, visibleCount);
   const hasMore = visibleCount < filteredThreads.length;
@@ -158,6 +161,9 @@ export function ForumFeed() {
                           </a>
                           <button
                             onClick={() => {
+                              setDismissedIds((current) => (
+                                current.includes(discussionId) ? current : [...current, discussionId]
+                              ));
                               dismissDiscussion(discussionId);
                               setOpenMenuId(null);
                             }}

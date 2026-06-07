@@ -10,11 +10,12 @@ interface UseForumsOptions {
   checkReplies?: boolean;
   discussionsPerForum?: number;
   replyCheckLimit?: number;
+  ignoredDiscussionIds?: number[];
 }
 
-export function useForums({ checkReplies = true, discussionsPerForum = 20, replyCheckLimit }: UseForumsOptions = {}) {
+export function useForums({ checkReplies = true, discussionsPerForum = 20, replyCheckLimit, ignoredDiscussionIds = [] }: UseForumsOptions = {}) {
   const { baseUrl, token, userId } = useAuthStore();
-  const { forumNameFilters, dismissedDiscussionIds, hiddenCourseIds } = useSettingsStore();
+  const { forumNameFilters, hiddenCourseIds } = useSettingsStore();
   const coursesQuery = useCourses();
   const hiddenCourseIdSet = new Set(hiddenCourseIds);
   const courses = coursesQuery.data ?? [];
@@ -46,7 +47,7 @@ export function useForums({ checkReplies = true, discussionsPerForum = 20, reply
       return [];
     }
   });
-  const dismissedIds = new Set(dismissedDiscussionIds);
+  const ignoredIds = new Set(ignoredDiscussionIds);
 
   const allThreads: ForumThread[] = forums.flatMap((forum) => {
     const discussions = discussionsByForum.get(forum.id);
@@ -70,7 +71,7 @@ export function useForums({ checkReplies = true, discussionsPerForum = 20, reply
     const discussionId = discussion.discussion ?? discussion.id;
     const discussionName = `${discussion.name ?? ''} ${discussion.subject ?? ''}`;
     if (hiddenCourseIdSet.has(discussion.courseId)) return false;
-    if (dismissedIds.has(discussionId)) return false;
+    if (ignoredIds.has(discussionId)) return false;
     return !compiledNameFilters.some((filter) => filter.test(discussionName));
   });
 
