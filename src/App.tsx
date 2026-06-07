@@ -5,6 +5,7 @@ import { AssignmentsPage } from './pages/AssignmentsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { DiscussionPage } from './pages/DiscussionPage';
 import { ForumsPage } from './pages/ForumsPage';
+import { LessonsPage } from './pages/LessonsPage';
 import { LoginPage } from './pages/LoginPage';
 import { MobileCallbackPage } from './pages/MobileCallbackPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -33,6 +34,8 @@ export function App() {
       <Route element={<AppLayout />}>
         <Route path="/assignments" element={<AssignmentsPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/lessons" element={<LessonsPage />} />
+        <Route path="/lessons/:lessonCmid" element={<LessonsPage />} />
         <Route path="/forums" element={<ForumsPage />} />
         <Route path="/forums/:discussionId" element={<DiscussionPage />} />
         <Route path="/settings" element={<SettingsPage />} />

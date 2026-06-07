@@ -1,4 +1,4 @@
-import { BookOpenCheck, CalendarDays, ChevronDown, MessageSquareText, Settings, SquareLibrary } from 'lucide-react';
+import { BookOpen, BookOpenCheck, CalendarDays, ChevronDown, MessageSquareText, Settings, SquareLibrary } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useCourses } from '../hooks/useCourses';
@@ -9,6 +9,7 @@ import { useSettingsStore } from '../store/settings';
 const items = [
   { to: '/assignments', labelKey: 'nav.assignments' as const, icon: BookOpenCheck },
   { to: '/calendar', labelKey: 'nav.calendar' as const, icon: CalendarDays },
+  { to: '/lessons', labelKey: 'nav.lessons' as const, icon: BookOpen },
   { to: '/forums', labelKey: 'nav.forums' as const, icon: MessageSquareText },
   { to: '/settings', labelKey: 'nav.settings' as const, icon: Settings },
 ];
@@ -98,7 +99,7 @@ export function Sidebar() {
             </div>
           </div>
         )}
-        <nav className="grid h-16 grid-cols-5">
+        <nav className="grid h-16 grid-cols-6">
           {items.map((item) => (
             <NavLink
               key={item.to}

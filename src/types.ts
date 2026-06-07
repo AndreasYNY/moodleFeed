@@ -41,6 +41,46 @@ export interface AssignmentWithCourse extends Assignment {
   gradeDisplay?: string;
 }
 
+export interface Lesson {
+  id: number;
+  course: number;
+  coursemodule: number;
+  name: string;
+  intro?: string;
+  introformat?: number;
+  introfiles?: AssignmentSubmissionFile[];
+  available?: number;
+  deadline?: number;
+  timemodified?: number;
+  grade?: number;
+}
+
+export interface LessonAccessInfo {
+  canmanage?: boolean;
+  cangrade?: boolean;
+  canviewreports?: boolean;
+  reviewmode?: boolean;
+  attemptscount?: number;
+  lastpageseen?: number;
+  leftduringtimedsession?: boolean;
+  firstpageid?: number;
+  preventaccessreasons?: Array<{
+    reason: string;
+    data?: string | number | null;
+    message?: string;
+  }>;
+  warnings?: unknown[];
+}
+
+export interface LessonWithCourse extends Lesson {
+  courseName: string;
+  courseShortName?: string;
+  courseColor: string;
+  completionState?: number;
+  completed?: boolean;
+  accessInfo?: LessonAccessInfo;
+}
+
 export interface AssignmentSubmissionFile {
   filename: string;
   fileurl: string;

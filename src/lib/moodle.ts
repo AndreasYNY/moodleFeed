@@ -1,4 +1,4 @@
-import type { Assignment, AssignmentSubmissionStatus, Course, Discussion, Forum, ForumPost, SiteInfo } from '../types';
+import type { Assignment, AssignmentSubmissionStatus, Course, Discussion, Forum, ForumPost, Lesson, LessonAccessInfo, SiteInfo } from '../types';
 import { moodleProxyHeaders, moodleRequestUrl } from './utils';
 
 export class MoodleApiError extends Error {
@@ -123,6 +123,19 @@ export const Moodle = {
 
   forums: (baseUrl: string, token: string, courseIds: number[]) =>
     moodleCall<Forum[]>(baseUrl, token, 'mod_forum_get_forums_by_courses', { courseids: courseIds }),
+
+  lessons: (baseUrl: string, token: string, courseIds: number[]) =>
+    moodleCall<{ lessons: Lesson[]; warnings?: unknown[] }>(
+      baseUrl,
+      token,
+      'mod_lesson_get_lessons_by_courses',
+      { courseids: courseIds },
+    ),
+
+  lessonAccessInfo: (baseUrl: string, token: string, lessonId: number) =>
+    moodleCall<LessonAccessInfo>(baseUrl, token, 'mod_lesson_get_lesson_access_information', {
+      lessonid: lessonId,
+    }),
 
   discussions: (baseUrl: string, token: string, forumId: number) =>
     moodleCall<{ discussions: Discussion[] }>(
