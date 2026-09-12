@@ -7,7 +7,7 @@ Standalone MCP (Model Context Protocol) server that exposes Moodle web service o
 19 tools covering all Moodle web service operations:
 
 | Tool | Description |
-|------|-------------|
+|------|-------------|0
 | `login` | Authenticate and get a web service token |
 | `site_info` | Get current user and site info |
 | `courses` | List enrolled courses |

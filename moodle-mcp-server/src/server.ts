@@ -64,12 +64,44 @@ function resolve(args: { baseUrl?: string; token?: string }) {
 }
 
 export function createMoodleServer(): McpServer {
-  const server = new McpServer({ name: 'moodle-mcp-server', version: '1.0.0' });
+  const server = new McpServer({
+    name: 'moodle-mcp-server',
+    version: '1.0.0',
+    instructions: `You have access to a Moodle learning management system via MCP tools.
+
+## Authentication
+Every tool requires a Moodle web service token. If MOODLE_BASE_URL and MOODLE_TOKEN environment variables are set (configured in the Hermes MCP server entry), you do NOT need to pass baseUrl or token arguments — they are used automatically.
+
+If no env vars are configured, you must ask the user for their Moodle base URL and token, then pass them to each tool call.
+
+To get a token via mobile login (for instances that disable username/password):
+1. Call get_login_url with the Moodle base URL
+2. Give the user the launchUrl and instruct them to open it in a browser
+3. After they authenticate and get redirected, ask them to paste the redirect link
+4. Call extract_token with that link to get the token
+
+## Getting Started
+When a user asks about their Moodle data and no token is available yet:
+1. Ask for their Moodle base URL (e.g. https://elearning.ut.ac.id)
+2. Try the login tool with their username and password
+3. If that fails (invalidlogin), guide them through the mobile login flow using get_login_url
+
+When a token is available (env var or user-provided):
+1. Call site_info first to get the user's ID and verify the token works
+2. Use the userId from site_info for subsequent calls to courses, completion, etc.
+3. Use courseIds from courses to call assignments, forums, lessons, etc.
+4. Use forumIds from forums to call discussions
+5. Use discussionIds from discussions to call posts
+
+## Tool Call Pattern
+Always pass baseUrl and token to tool calls UNLESS they are set as environment variables.
+The tools return JSON — summarize the results for the user in a readable format.`,
+  } as any);
 
   server.registerTool(
     'login',
     {
-      description: 'Authenticate with Moodle and obtain a web service token',
+      description: 'Authenticate with Moodle using username and password. Returns a web service token. Note: many Moodle instances disable this endpoint — if it fails with "invalidlogin", use get_login_url instead.',
       inputSchema: z.object({
         baseUrl: z.string().describe('Moodle base URL'),
         username: z.string().describe('Moodle username'),
@@ -146,7 +178,7 @@ export function createMoodleServer(): McpServer {
   server.registerTool(
     'site_info',
     {
-      description: 'Get information about the current user and site',
+      description: 'Get information about the current user and site. Returns userId, fullname, and site details. Use this first to get the userId needed for other tools.',
       inputSchema: z.object(authSchema),
     },
     async (args) => {
@@ -163,7 +195,7 @@ export function createMoodleServer(): McpServer {
   server.registerTool(
     'courses',
     {
-      description: 'List all courses the user is enrolled in',
+      description: 'List all courses the user is enrolled in. Returns course id, fullname. Use the course ids with assignments, forums, or lessons tools.',
       inputSchema: z.object({
         ...authSchema,
         userId: z.number().describe('User ID'),
@@ -183,7 +215,7 @@ export function createMoodleServer(): McpServer {
   server.registerTool(
     'assignments',
     {
-      description: 'Get assignments for the specified courses',
+      description: 'Get assignments for the specified courses. Pass an array of course ids (from the courses tool).',
       inputSchema: z.object({
         ...authSchema,
         courseIds: z.array(z.number()).describe('Array of course IDs'),
@@ -245,7 +277,7 @@ export function createMoodleServer(): McpServer {
   server.registerTool(
     'forums',
     {
-      description: 'Get forums for the specified courses',
+      description: 'Get forums for the specified courses. Pass an array of course ids (from the courses tool). Use forum ids with the discussions tool.',
       inputSchema: z.object({
         ...authSchema,
         courseIds: z.array(z.number()).describe('Array of course IDs'),
@@ -265,7 +297,7 @@ export function createMoodleServer(): McpServer {
   server.registerTool(
     'lessons',
     {
-      description: 'Get lessons for the specified courses',
+      description: 'Get lessons for the specified courses. Pass an array of course ids (from the courses tool).',
       inputSchema: z.object({
         ...authSchema,
         courseIds: z.array(z.number()).describe('Array of course IDs'),
@@ -305,7 +337,7 @@ export function createMoodleServer(): McpServer {
   server.registerTool(
     'discussions',
     {
-      description: 'Get paginated discussions for a specific forum',
+      description: 'Get paginated discussions for a specific forum. Pass a forum id (from the forums tool). Use discussion ids with the posts tool.',
       inputSchema: z.object({
         ...authSchema,
         forumId: z.number().describe('Forum ID'),
@@ -346,7 +378,7 @@ export function createMoodleServer(): McpServer {
   server.registerTool(
     'posts',
     {
-      description: 'Get all posts in a discussion',
+      description: 'Get all posts in a discussion. Pass a discussion id (from the discussions tool).',
       inputSchema: z.object({
         ...authSchema,
         discussionId: z.number().describe('Discussion ID'),
