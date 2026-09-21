@@ -32,15 +32,15 @@ function attachmentUrl(fileUrl: string | undefined, token: string | null): strin
 
 function PostAttachments({ attachments, token }: { attachments?: ForumPost['attachments']; token: string | null }) {
   const { t } = useI18n();
-  const valid = attachments?.filter((f) => f.fileurl) ?? [];
+  const valid = attachments?.filter((f) => f.url) ?? [];
   if (!valid.length) return null;
   return (
     <div className="mt-3 space-y-2">
       {valid.map((file) => {
-        const fileUrl = attachmentUrl(file.fileurl, token)!;
+        const fileUrl = attachmentUrl(file.url, token)!;
         const isImage = file.mimetype?.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.filename);
         return (
-          <div key={`${file.fileurl}-${file.filename}`} className="overflow-hidden rounded-lg bg-slate-50">
+          <div key={`${file.url}-${file.filename}`} className="overflow-hidden rounded-lg bg-slate-50">
             {isImage && (
               <a href={fileUrl} target="_blank" rel="noreferrer" className="block border-b border-slate-200/80 bg-white">
                 <img src={fileUrl} alt={file.filename} className="max-h-96 w-full object-contain" />

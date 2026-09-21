@@ -183,6 +183,14 @@ export interface ForumThread extends Discussion {
   cutoffDate?: number;
 }
 
+export interface ForumPostAttachment {
+  filename: string;
+  url: string;
+  filesize?: number;
+  mimetype?: string;
+  icon?: string;
+}
+
 export interface ForumPost {
   id: number;
   discussionid?: number;
@@ -205,7 +213,7 @@ export interface ForumPost {
   capabilities?: Record<string, boolean>;
   tags?: Array<{ rawname: string }>;
   rating?: number;
-  attachments?: AssignmentSubmissionFile[];
+  attachments?: ForumPostAttachment[];
 }
 
 export type SyncInterval = 15 | 30 | 60 | 'manual';
