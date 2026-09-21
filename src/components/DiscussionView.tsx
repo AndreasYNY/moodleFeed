@@ -58,8 +58,11 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
   const replyMutation = useMutation({
     mutationFn: (message: string) =>
       Moodle.reply(baseUrl!, token!, promptPost?.id ?? discussionId, `Re: ${thread?.name ?? t('common.forumReply')}`, message),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['posts', discussionId] }),
-    onError: () => pushToast({ title: t('discussion.replyError') }),
+    onSuccess: () => queryClient.invalidateQueries(),
+    onError: () => {
+      queryClient.invalidateQueries();
+      pushToast({ title: t('discussion.replyError') });
+    },
   });
 
   const editMutation = useMutation({
@@ -68,9 +71,12 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
     onSuccess: () => {
       setEditingPostId(null);
       setEditingMessage('');
-      queryClient.invalidateQueries({ queryKey: ['posts', discussionId] });
+      queryClient.invalidateQueries();
     },
-    onError: () => pushToast({ title: t('discussion.editError') }),
+    onError: () => {
+      queryClient.invalidateQueries();
+      pushToast({ title: t('discussion.editError') });
+    },
   });
 
   function scrollToMyAnswer() {
