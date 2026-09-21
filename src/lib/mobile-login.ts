@@ -1,6 +1,6 @@
 const mobilePassportKey = 'moodlefeed-mobile-passport';
 const mobileBaseUrlKey = 'moodlefeed-mobile-base-url';
-const mobileUrlScheme = 'web+moodlefeed';
+export const mobileUrlScheme = 'web+moodlefeed';
 
 export interface MobileTokenPayload {
   siteId: string;
@@ -27,24 +27,24 @@ export function clearRememberedMobileLoginAttempt() {
   localStorage.removeItem(mobilePassportKey);
 }
 
-export function buildMobileLaunchUrl(baseUrl: string, passport: string) {
+export function buildMobileLaunchUrl(baseUrl: string, passport: string, scheme = mobileUrlScheme) {
   const url = new URL('/admin/tool/mobile/launch.php', baseUrl);
   url.search = new URLSearchParams({
     service: 'moodle_mobile_app',
     passport,
-    urlscheme: mobileUrlScheme,
+    urlscheme: scheme,
     lang: 'en_us',
   }).toString();
   return url.toString();
 }
 
-export function registerMobileProtocolHandler() {
+export function registerMobileProtocolHandler(scheme = mobileUrlScheme) {
   if (!('registerProtocolHandler' in navigator)) {
     throw new Error('Protocol handlers are not supported in this browser');
   }
 
   navigator.registerProtocolHandler(
-    mobileUrlScheme,
+    scheme,
     `${window.location.origin}/mobile-callback#%s`,
   );
 }

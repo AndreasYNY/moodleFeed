@@ -6,6 +6,7 @@ import { useI18n, type I18nKey } from '../lib/i18n';
 import {
   buildMobileLaunchUrl,
   generateMobilePassport,
+  mobileUrlScheme,
   parseMobileToken,
   registerMobileProtocolHandler,
   rememberMobileLoginAttempt,
@@ -28,6 +29,7 @@ export function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [mobileLink, setMobileLink] = useState('');
+  const [scheme, setScheme] = useState(mobileUrlScheme);
   const [error, setError] = useState('');
   const [mobileMessage, setMobileMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,7 +64,7 @@ export function LoginPage() {
     setError('');
     setMobileMessage('');
     try {
-      registerMobileProtocolHandler();
+      registerMobileProtocolHandler(scheme);
       setMobileMessage(t('login.handlerRequested'));
     } catch (err) {
       setError(errorMessage(err, 'login.errorRegisterHandler'));
@@ -76,7 +78,7 @@ export function LoginPage() {
       const normalizedBaseUrl = normalizeMoodleBaseUrl(baseUrl);
       const passport = generateMobilePassport();
       rememberMobileLoginAttempt(normalizedBaseUrl, passport);
-      window.open(buildMobileLaunchUrl(normalizedBaseUrl, passport), '_blank', 'noopener,noreferrer');
+      window.open(buildMobileLaunchUrl(normalizedBaseUrl, passport, scheme), '_blank', 'noopener,noreferrer');
       setMobileMessage(t('login.mobileOpened'));
     } catch (err) {
       setError(errorMessage(err, 'login.errorStartMobile'));
@@ -148,6 +150,15 @@ export function LoginPage() {
               <p className="mb-3 text-xs leading-5 text-slate-500">
                 {t('login.mobileDescription')}
               </p>
+              <label className="mb-3 block text-sm font-medium text-slate-700">
+                {t('login.scheme')}
+                <input
+                  value={scheme}
+                  onChange={(event) => setScheme(event.target.value)}
+                  placeholder={mobileUrlScheme}
+                  className="mf-focus mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
+                />
+              </label>
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
