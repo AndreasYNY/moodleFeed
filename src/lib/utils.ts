@@ -34,7 +34,7 @@ export function sanitizeHtml(html = '') {
   if (typeof window === 'undefined' || !('DOMParser' in window)) return html;
 
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  doc.querySelectorAll('script, iframe, object, embed, form, input, button').forEach((node) => node.remove());
+  doc.querySelectorAll('script, object, embed, form, input, button').forEach((node) => node.remove());
   doc.querySelectorAll('*').forEach((node) => {
     [...node.attributes].forEach((attribute) => {
       const name = attribute.name.toLowerCase();
@@ -43,6 +43,23 @@ export function sanitizeHtml(html = '') {
         node.removeAttribute(attribute.name);
       }
     });
+  });
+
+  return doc.body.innerHTML;
+}
+
+export function rewriteContentUrls(html: string, token: string | null): string {
+  if (!token || typeof window === 'undefined' || !('DOMParser' in window)) return html;
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  doc.querySelectorAll('img, iframe').forEach((node) => {
+    const src = node.getAttribute('src');
+    if (!src || src.startsWith('data:')) return;
+    if (/[?&]token=/.test(src)) return;
+
+    const separator = src.includes('?') ? '&' : '?';
+    node.setAttribute('src', `${src}${separator}token=${encodeURIComponent(token)}`);
   });
 
   return doc.body.innerHTML;

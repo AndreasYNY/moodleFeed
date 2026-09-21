@@ -7,7 +7,7 @@ import { useDiscussion } from '../hooks/useDiscussion';
 import { useAuthErrorRedirect } from '../hooks/auth-guard';
 import { useI18n } from '../lib/i18n';
 import { Moodle } from '../lib/moodle';
-import { absoluteMoodleUrl, initials, sanitizeHtml, stripHtml } from '../lib/utils';
+import { absoluteMoodleUrl, initials, rewriteContentUrls, sanitizeHtml, stripHtml } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import { useNotificationsStore } from '../store/notifications';
 import type { ForumPost, ForumThread } from '../types';
@@ -138,7 +138,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
           </div>
           <div
             className="prose prose-sm max-w-none text-slate-700"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(promptPost.message) }}
+            dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(promptPost.message), token) }}
           />
         </article>
 
@@ -216,7 +216,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                 ) : (
                   <div
                     className="prose prose-sm max-w-none text-slate-700"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.message) }}
+                    dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(post.message), token) }}
                   />
                 )}
                 <div className="mt-3 inline-flex items-center gap-1 text-xs text-slate-500">
