@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
-import { Edit3, ExternalLink, Heart, Quote } from 'lucide-react';
+import { Edit3, ExternalLink, FileText, Heart, Quote } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useDiscussion } from '../hooks/useDiscussion';
@@ -140,6 +140,33 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
             className="prose prose-sm max-w-none text-slate-700"
             dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(promptPost.message), token) }}
           />
+          {promptPost.attachments?.length ? (
+            <div className="mt-3 space-y-2">
+              {promptPost.attachments.map((file) => {
+                const fileUrl = `${file.fileurl}${/[?&]token=/.test(file.fileurl) ? '' : `${file.fileurl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token ?? '')}`}`;
+                const isImage = file.mimetype?.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.filename);
+                return (
+                  <div key={`${file.fileurl}-${file.filename}`} className="overflow-hidden rounded-lg bg-slate-50">
+                    {isImage && (
+                      <a href={fileUrl} target="_blank" rel="noreferrer" className="block border-b border-slate-200/80 bg-white">
+                        <img src={fileUrl} alt={file.filename} className="max-h-96 w-full object-contain" />
+                      </a>
+                    )}
+                    <div className="flex items-center gap-3 px-3 py-2">
+                      <FileText className="h-4 w-4 text-brand" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium text-slate-800">{file.filename}</div>
+                        {file.filesize != null && <div className="text-xs text-slate-500">{file.filesize < 1024 ? `${file.filesize} B` : file.filesize < 1048576 ? `${Math.round(file.filesize / 1024)} KB` : `${(file.filesize / 1048576).toFixed(1)} MB`}</div>}
+                      </div>
+                      <a href={fileUrl} target="_blank" rel="noreferrer" className="rounded-lg p-2 text-slate-500 hover:bg-white" title={t('discussion.openInMoodle')}>
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </article>
 
         <div className="space-y-3">
@@ -219,6 +246,33 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                     dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(post.message), token) }}
                   />
                 )}
+                {post.attachments?.length ? (
+                  <div className="mt-3 space-y-2">
+                    {post.attachments.map((file) => {
+                      const fileUrl = `${file.fileurl}${/[?&]token=/.test(file.fileurl) ? '' : `${file.fileurl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token ?? '')}`}`;
+                      const isImage = file.mimetype?.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.filename);
+                      return (
+                        <div key={`${file.fileurl}-${file.filename}`} className="overflow-hidden rounded-lg bg-slate-50">
+                          {isImage && (
+                            <a href={fileUrl} target="_blank" rel="noreferrer" className="block border-b border-slate-200/80 bg-white">
+                              <img src={fileUrl} alt={file.filename} className="max-h-96 w-full object-contain" />
+                            </a>
+                          )}
+                          <div className="flex items-center gap-3 px-3 py-2">
+                            <FileText className="h-4 w-4 text-brand" />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium text-slate-800">{file.filename}</div>
+                              {file.filesize != null && <div className="text-xs text-slate-500">{file.filesize < 1024 ? `${file.filesize} B` : file.filesize < 1048576 ? `${Math.round(file.filesize / 1024)} KB` : `${(file.filesize / 1048576).toFixed(1)} MB`}</div>}
+                            </div>
+                            <a href={fileUrl} target="_blank" rel="noreferrer" className="rounded-lg p-2 text-slate-500 hover:bg-white" title={t('discussion.openInMoodle')}>
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
                 <div className="mt-3 inline-flex items-center gap-1 text-xs text-slate-500">
                   <Heart className="h-3.5 w-3.5" />
                   {post.rating ?? 0}

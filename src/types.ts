@@ -205,6 +205,7 @@ export interface ForumPost {
   capabilities?: Record<string, boolean>;
   tags?: Array<{ rawname: string }>;
   rating?: number;
+  attachments?: AssignmentSubmissionFile[];
 }
 
 export type SyncInterval = 15 | 30 | 60 | 'manual';
