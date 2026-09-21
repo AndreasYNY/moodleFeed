@@ -1,6 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { NotificationsBridge } from './components/NotificationsBridge';
 import { Sidebar } from './components/Sidebar';
+import { ToastContainer } from './components/ToastContainer';
 import { AssignmentsPage } from './pages/AssignmentsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { DiscussionPage } from './pages/DiscussionPage';
@@ -19,6 +20,7 @@ function AppLayout() {
     <div className="min-h-screen bg-slate-50 pb-16 md:pb-0 md:pl-[220px]">
       <Sidebar />
       <NotificationsBridge />
+      <ToastContainer />
       <Outlet />
     </div>
   );

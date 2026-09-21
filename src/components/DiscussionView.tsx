@@ -9,6 +9,7 @@ import { useI18n } from '../lib/i18n';
 import { Moodle } from '../lib/moodle';
 import { absoluteMoodleUrl, initials, sanitizeHtml, stripHtml } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
+import { useNotificationsStore } from '../store/notifications';
 import type { ForumPost, ForumThread } from '../types';
 import { EmptyState } from './EmptyState';
 import { ForumComposer } from './ForumComposer';
@@ -41,6 +42,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
   const thread = location.state?.thread as ForumThread | undefined;
   const { baseUrl, token, userId } = useAuthStore();
   const queryClient = useQueryClient();
+  const pushToast = useNotificationsStore((state) => state.pushToast);
   const postsQuery = useDiscussion(discussionId);
   useAuthErrorRedirect(postsQuery.error);
 
@@ -57,6 +59,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
     mutationFn: (message: string) =>
       Moodle.reply(baseUrl!, token!, promptPost?.id ?? discussionId, `Re: ${thread?.name ?? t('common.forumReply')}`, message),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['posts', discussionId] }),
+    onError: () => pushToast({ title: t('discussion.replyError') }),
   });
 
   const editMutation = useMutation({
@@ -67,6 +70,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
       setEditingMessage('');
       queryClient.invalidateQueries({ queryKey: ['posts', discussionId] });
     },
+    onError: () => pushToast({ title: t('discussion.editError') }),
   });
 
   function scrollToMyAnswer() {
@@ -235,6 +239,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
       {canReply ? (
         <ForumComposer
           context={promptContext}
+          isPosting={replyMutation.isPending}
           onPost={async (html) => {
             await replyMutation.mutateAsync(html);
           }}

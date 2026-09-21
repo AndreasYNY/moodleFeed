@@ -10,13 +10,25 @@ export interface NotificationItem {
   read: boolean;
 }
 
+export interface ToastItem {
+  id: string;
+  title: string;
+  body?: string;
+  href?: string;
+}
+
 interface NotificationsState {
   items: NotificationItem[];
   addNotification: (item: Omit<NotificationItem, 'id' | 'createdAt' | 'read'> & { id?: string }) => void;
   markAllRead: () => void;
   removeNotification: (id: string) => void;
   clearNotifications: () => void;
+  toasts: ToastItem[];
+  pushToast: (toast: Omit<ToastItem, 'id'> & { id?: string }) => void;
+  dismissToast: (id: string) => void;
 }
+
+let toastCounter = 0;
 
 export const useNotificationsStore = create<NotificationsState>()(
   persist(
@@ -50,7 +62,20 @@ export const useNotificationsStore = create<NotificationsState>()(
           items: state.items.filter((item) => item.id !== id),
         })),
       clearNotifications: () => set({ items: [] }),
+      toasts: [],
+      pushToast: (toast) =>
+        set((state) => {
+          const id = toast.id ?? `toast-${++toastCounter}`;
+          return { toasts: [...state.toasts.slice(-4), { id, title: toast.title, body: toast.body, href: toast.href }] };
+        }),
+      dismissToast: (id) =>
+        set((state) => ({
+          toasts: state.toasts.filter((t) => t.id !== id),
+        })),
     }),
-    { name: 'moodlefeed-notifications' },
+    {
+      name: 'moodlefeed-notifications',
+      partialize: (state) => ({ items: state.items }),
+    },
   ),
 );

@@ -3,7 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Heading2, Heading3, Italic, Link, List, ListOrdered, Maximize2, Quote, Sparkles, Underline as UnderlineIcon } from 'lucide-react';
+import { Bold, Heading2, Heading3, Italic, Link, List, ListOrdered, Loader2, Maximize2, Quote, Sparkles, Underline as UnderlineIcon } from 'lucide-react';
 import { useState } from 'react';
 import { getAiProvider } from '../lib/ai-providers';
 import { useI18n } from '../lib/i18n';
@@ -14,9 +14,11 @@ import { AIPromptModal } from './AIPromptModal';
 export function ForumComposer({
   onPost,
   context,
+  isPosting,
 }: {
   onPost: (html: string) => Promise<void>;
   context: DiscussionContext;
+  isPosting?: boolean;
 }) {
   const { t } = useI18n();
   const [fullscreen, setFullscreen] = useState(false);
@@ -100,9 +102,11 @@ export function ForumComposer({
               await onPost(html);
               editor?.commands.clearContent();
             }}
-            className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white"
+            disabled={isPosting}
+            className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {t('composer.postReply')}
+            {isPosting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isPosting ? t('composer.posting') : t('composer.postReply')}
           </button>
         </div>
       </div>
