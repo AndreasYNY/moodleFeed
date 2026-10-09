@@ -79,7 +79,7 @@ export function ForumFeed() {
   }, [filteredThreads.length, hasMore]);
 
   if (query.isLoading) {
-    return <div className="space-y-3">{Array.from({ length: 6 }, (_, index) => <SkeletonCard key={index} />)}</div>;
+    return <CardSkeletonGrid count={6} variant="forum" />;
   }
 
   if (!threads.length) {

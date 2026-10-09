@@ -63,7 +63,7 @@ export function AssignmentFeed() {
   }, [focusedAssignmentId, query.isLoading]);
 
   if (query.isLoading) {
-    return <div className="space-y-3">{Array.from({ length: 5 }, (_, index) => <SkeletonCard key={index} />)}</div>;
+    return <CardSkeletonGrid count={5} variant="assignment" />;
   }
 
   const assignments = (query.data ?? [])

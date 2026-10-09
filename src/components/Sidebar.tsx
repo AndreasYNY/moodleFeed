@@ -5,6 +5,7 @@ import { useCourses } from '../hooks/useCourses';
 import { useI18n } from '../lib/i18n';
 import { cn, getCourseColor } from '../lib/utils';
 import { useSettingsStore } from '../store/settings';
+import { CourseListSkeleton } from './Skeletons';
 
 const items = [
   { to: '/assignments', labelKey: 'nav.assignments' as const, icon: BookOpenCheck },

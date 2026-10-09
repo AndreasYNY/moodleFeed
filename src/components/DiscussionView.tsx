@@ -13,7 +13,7 @@ import { useNotificationsStore } from '../store/notifications';
 import type { ForumPost, ForumThread } from '../types';
 import { EmptyState } from './EmptyState';
 import { ForumComposer } from './ForumComposer';
-import { SkeletonCard } from './SkeletonCard';
+import { DiscussionSkeleton } from './Skeletons';
 
 function isTutor(post: ForumPost) {
   const name = `${post.author?.fullname ?? post.userfullname ?? ''} ${post.tags?.map((tag) => tag.rawname).join(' ') ?? ''}`.toLowerCase();
@@ -149,7 +149,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
   );
 
   if (postsQuery.isLoading) {
-    return <div className="space-y-3">{Array.from({ length: 4 }, (_, index) => <SkeletonCard key={index} />)}</div>;
+    return <DiscussionSkeleton />;
   }
 
   if (!posts.length) return <EmptyState title={t('discussion.unavailableTitle')} body={t('discussion.unavailableBody')} />;
