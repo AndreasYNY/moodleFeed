@@ -50,15 +50,15 @@ export function MobileCallbackPage() {
   }, [errorMessage, login, navigate, t]);
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-50 px-4">
-      <section className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center shadow-soft">
+    <main className="grid min-h-screen place-items-center bg-slate-50 dark:bg-slate-900 px-4">
+      <section className="w-full max-w-md rounded-xl border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 p-6 text-center shadow-soft dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
         <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-xl bg-active text-brand">
           {status === 'loading' && <Loader2 className="h-6 w-6 animate-spin" />}
           {status === 'success' && <CheckCircle2 className="h-6 w-6" />}
           {status === 'error' && <XCircle className="h-6 w-6" />}
         </div>
-        <h1 className="text-lg font-semibold text-slate-950">{t('mobileCallback.title')}</h1>
-        <p className="mt-2 text-sm text-slate-500">{message}</p>
+        <h1 className="text-lg font-semibold text-slate-950 dark:text-slate-200">{t('mobileCallback.title')}</h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{message}</p>
         {status === 'error' && (
           <button
             type="button"

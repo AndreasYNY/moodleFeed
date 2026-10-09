@@ -105,32 +105,32 @@ export function LessonFeed() {
             <article
               key={`${lesson.course}-${lesson.id}`}
               id={`lesson-${lesson.coursemodule}`}
-              className={`overflow-hidden rounded-xl border border-slate-200/80 bg-white ${lesson.coursemodule === focusedLessonId ? 'ring-2 ring-brand ring-offset-2' : ''}`}
+              className={`overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-600/80 bg-white dark:bg-gray-900 ${lesson.coursemodule === focusedLessonId ? 'ring-2 ring-brand ring-offset-2 dark:ring-offset-slate-900' : ''}`}
             >
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-500">
+                    <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                       <span className="h-2 w-2 rounded-full" style={{ backgroundColor: courseColor.dot }} />
                       <span className="truncate">{lesson.courseName}</span>
                       {lesson.courseShortName && <span className="shrink-0">· {lesson.courseShortName}</span>}
                     </div>
-                    <h2 className="text-[15px] font-medium leading-5 text-slate-950">{lesson.name}</h2>
+                    <h2 className="text-[15px] font-medium leading-5 text-slate-950 dark:text-slate-200">{lesson.name}</h2>
                   </div>
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger asChild>
-                      <button type="button" className="rounded-lg p-2 text-slate-400 hover:bg-slate-50" title={t('lessons.actions')}>
+                      <button type="button" className="rounded-lg p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800" title={t('lessons.actions')}>
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Portal>
-                      <DropdownMenu.Content align="end" sideOffset={6} className="z-50 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-soft">
+                      <DropdownMenu.Content align="end" sideOffset={6} className="z-50 w-44 rounded-lg border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 p-1 shadow-soft dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
                         <DropdownMenu.Item asChild className="outline-none">
                           <a
                             href={url}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 focus:bg-slate-50"
+                            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-gray-800 focus:bg-slate-50 dark:focus:bg-gray-800"
                           >
                             <ExternalLink className="h-4 w-4" />
                             {t('lessons.openInMoodle')}
@@ -142,7 +142,7 @@ export function LessonFeed() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-gray-800 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400">
                     <BookOpen className="h-3 w-3" />
                     {t('lessons.lessonType')}
                   </span>
@@ -153,18 +153,20 @@ export function LessonFeed() {
                     {status === 'completed' ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                     {status === 'completed'
                       ? t('lessons.status.completed')
-                      : status === 'overdue'
-                        ? t('lessons.status.overdue')
-                        : status === 'closed'
-                          ? t('lessons.status.closed')
-                        : status === 'dueSoon' && dueDate
-                          ? t('lessons.status.dueSoon', { time: formatDistanceToNow(dueDate, { addSuffix: true, locale: dateLocale }) })
-                          : status === 'locked' && availableDate
-                            ? t('lessons.status.locked', { time: formatDistanceToNow(availableDate, { addSuffix: true, locale: dateLocale }) })
-                          : t('lessons.status.available')}
+                      : status === 'answered'
+                        ? t('lessons.status.answered')
+                        : status === 'overdue'
+                          ? t('lessons.status.overdue')
+                          : status === 'closed'
+                            ? t('lessons.status.closed')
+                            : status === 'dueSoon' && dueDate
+                            ? t('lessons.status.dueSoon', { time: formatDistanceToNow(dueDate, { addSuffix: true, locale: dateLocale }) })
+                            : status === 'locked' && availableDate
+                              ? t('lessons.status.locked', { time: formatDistanceToNow(availableDate, { addSuffix: true, locale: dateLocale }) })
+                            : t('lessons.status.available')}
                   </span>
                   {dueDate && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-gray-800 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400">
                       <Clock className="h-3 w-3" />
                       {isSameDay(dueDate, new Date())
                         ? t('calendar.dueTodayAt', { time: format(dueDate, 'h:mm a', { locale: dateLocale }) })
@@ -175,13 +177,16 @@ export function LessonFeed() {
 
                 {accessReason && (
                   <div
-                    className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(accessReason) }}
+                    className="mt-3 rounded-lg border border-slate-200 dark:border-slate-600/80 bg-slate-50 dark:bg-slate-900 px-3 py-2 text-sm text-slate-600 dark:text-slate-400"
+                    dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(accessReason), token, baseUrl) }}
                   />
                 )}
 
                 {lesson.intro && (
-                  <div className="prose prose-sm mt-3 max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.intro) }} />
+                  <div
+                    className="prose dark:prose-invert prose-sm mt-3 max-w-none text-slate-700 dark:text-slate-200 [&_iframe]:aspect-video [&_iframe]:h-auto [&_iframe]:max-w-full"
+                    dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(lesson.intro), token, baseUrl) }}
+                  />
                 )}
 
                 <div className="mt-4">

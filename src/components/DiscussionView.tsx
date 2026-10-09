@@ -40,19 +40,19 @@ function PostAttachments({ attachments, token }: { attachments?: ForumPost['atta
         const fileUrl = attachmentUrl(file.url, token)!;
         const isImage = file.mimetype?.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.filename);
         return (
-          <div key={`${file.url}-${file.filename}`} className="overflow-hidden rounded-lg bg-slate-50">
+          <div key={`${file.url}-${file.filename}`} className="overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-900">
             {isImage && (
-              <a href={fileUrl} target="_blank" rel="noreferrer" className="block border-b border-slate-200/80 bg-white">
+              <a href={fileUrl} target="_blank" rel="noreferrer" className="block border-b border-slate-200/80 dark:border-slate-600/80 bg-white dark:bg-gray-900">
                 <img src={fileUrl} alt={file.filename} className="max-h-96 w-full object-contain" />
               </a>
             )}
             <div className="flex items-center gap-3 px-3 py-2">
               <FileText className="h-4 w-4 text-brand" />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-slate-800">{file.filename}</div>
-                {file.filesize != null && <div className="text-xs text-slate-500">{file.filesize < 1024 ? `${file.filesize} B` : file.filesize < 1048576 ? `${Math.round(file.filesize / 1024)} KB` : `${(file.filesize / 1048576).toFixed(1)} MB`}</div>}
+                <div className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{file.filename}</div>
+                {file.filesize != null && <div className="text-xs text-slate-500 dark:text-slate-400">{file.filesize < 1024 ? `${file.filesize} B` : file.filesize < 1048576 ? `${Math.round(file.filesize / 1024)} KB` : `${(file.filesize / 1048576).toFixed(1)} MB`}</div>}
               </div>
-              <a href={fileUrl} target="_blank" rel="noreferrer" className="rounded-lg p-2 text-slate-500 hover:bg-white" title={t('discussion.openInMoodle')}>
+              <a href={fileUrl} target="_blank" rel="noreferrer" className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-gray-800" title={t('discussion.openInMoodle')}>
                 <ExternalLink className="h-4 w-4" />
               </a>
             </div>
@@ -161,14 +161,14 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-2 text-xs font-semibold text-brand">{t('discussion.threadPrompt')}</div>
-              <h2 className="break-words text-base font-semibold text-slate-950 md:text-lg">{promptPost.subject ?? thread?.name}</h2>
+              <h2 className="break-words text-base font-semibold text-slate-950 dark:text-slate-200 md:text-lg">{promptPost.subject ?? thread?.name}</h2>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <a
                 href={absoluteMoodleUrl(baseUrl, `/mod/forum/discuss.php?d=${discussionId}`)}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 dark:border-slate-600/80 p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800"
                 title={t('discussion.openInMoodle')}
               >
                 <ExternalLink className="h-4 w-4" />
@@ -176,8 +176,8 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
             </div>
           </div>
           <div
-            className="prose prose-sm max-w-none text-slate-700"
-            dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(promptPost.message), token) }}
+            className="prose dark:prose-invert prose-sm max-w-none text-slate-700 dark:text-slate-200"
+            dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(promptPost.message), token, baseUrl) }}
           />
           <PostAttachments attachments={promptPost.attachments} token={token} />
         </article>
@@ -192,10 +192,10 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
               <article id={`post-${post.id}`} key={post.id} className={`mf-card scroll-mt-20 ${tutor ? 'border-l-4 border-l-brand' : ''}`}>
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700">{initials(author)}</div>
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 dark:bg-gray-800 text-xs font-semibold text-slate-700 dark:text-slate-200">{initials(author)}</div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="break-words text-sm font-semibold text-slate-950">{author}</span>
+                        <span className="break-words text-sm font-semibold text-slate-950 dark:text-slate-200">{author}</span>
                         {mine && (
                           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                             {t('discussion.you')}
@@ -205,7 +205,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                           {tutor ? t('discussion.tutor') : t('discussion.student')}
                         </span>
                       </div>
-                      {postTime(post) > 0 && <div className="text-xs text-slate-500">{formatDistanceToNow(postTime(post) * 1000, { addSuffix: true, locale: dateLocale })}</div>}
+                      {postTime(post) > 0 && <div className="text-xs text-slate-500 dark:text-slate-400">{formatDistanceToNow(postTime(post) * 1000, { addSuffix: true, locale: dateLocale })}</div>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -216,13 +216,13 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                           setEditingMessage(post.message ?? '');
                         }}
                         disabled={!canEdit}
-                        className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg border border-slate-200 dark:border-slate-600/80 p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
                         title={canEdit ? t('discussion.editReply') : t('discussion.editingClosed')}
                       >
                         <Edit3 className="h-4 w-4" />
                       </button>
                     )}
-                    <button className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title={t('discussion.quote')}>
+                    <button className="rounded-lg border border-slate-200 dark:border-slate-600/80 p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800" title={t('discussion.quote')}>
                       <Quote className="h-4 w-4" />
                     </button>
                   </div>
@@ -232,7 +232,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                     <textarea
                       value={stripHtml(editingMessage)}
                       onChange={(event) => setEditingMessage(event.target.value)}
-                      className="mf-focus min-h-36 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      className="mf-focus dark:bg-slate-900 dark:text-slate-200 min-h-36 w-full rounded-lg border border-slate-200 dark:border-slate-600/80 px-3 py-2 text-sm"
                     />
                     <div className="flex gap-2">
                       <button
@@ -247,7 +247,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                           setEditingPostId(null);
                           setEditingMessage('');
                         }}
-                        className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600"
+                        className="rounded-lg border border-slate-200 dark:border-slate-600/80 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400"
                       >
                         {t('discussion.cancel')}
                       </button>
@@ -255,12 +255,12 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                   </div>
                 ) : (
                   <div
-                    className="prose prose-sm max-w-none text-slate-700"
-                    dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(post.message), token) }}
+                    className="prose dark:prose-invert prose-sm max-w-none text-slate-700 dark:text-slate-200"
+                    dangerouslySetInnerHTML={{ __html: rewriteContentUrls(sanitizeHtml(post.message), token, baseUrl) }}
                   />
                 )}
                 <PostAttachments attachments={post.attachments} token={token} />
-                <div className="mt-3 inline-flex items-center gap-1 text-xs text-slate-500">
+                <div className="mt-3 inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                   <Heart className="h-3.5 w-3.5" />
                   {post.rating ?? 0}
                 </div>
@@ -294,8 +294,8 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
           }}
         />
       ) : (
-        <div className="border-t border-slate-200 bg-white p-4">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <div className="border-t border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 p-4">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-600/80 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
             {t('discussion.closed')}
           </div>
         </div>

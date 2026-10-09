@@ -13,15 +13,15 @@ function ToastItem({ id, title, body, href }: { id: string; title: string; body?
   }, [id, dismissToast]);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 p-4 shadow-soft dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
       <div className="flex items-start justify-between gap-3">
         <a href={href ?? '#'} className={href ? 'block min-w-0 flex-1' : 'pointer-events-none block min-w-0 flex-1'}>
-          <div className="text-sm font-semibold text-slate-950">{title}</div>
-          {body && <div className="mt-1 text-sm leading-5 text-slate-600">{body}</div>}
+          <div className="text-sm font-semibold text-slate-950 dark:text-slate-200">{title}</div>
+          {body && <div className="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-400">{body}</div>}
         </a>
         <button
           onClick={() => dismissToast(id)}
-          className="rounded-lg p-1 text-slate-400 hover:bg-slate-50"
+          className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800"
           title={t('notifications.dismiss')}
         >
           <X className="h-4 w-4" />

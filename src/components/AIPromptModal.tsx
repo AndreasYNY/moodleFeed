@@ -112,17 +112,17 @@ export function AIPromptModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-modal-title"
-        className="flex max-h-[90vh] w-[540px] max-w-[92vw] flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white text-slate-950 shadow-2xl"
+        className="flex max-h-[90vh] w-[540px] max-w-[92vw] flex-col overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-600/80 bg-white dark:bg-gray-900 text-slate-950 dark:text-slate-200 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <div className="flex items-start gap-3 border-b border-slate-200/80 px-[18px] pb-3.5 pt-4">
+        <div className="flex items-start gap-3 border-b border-slate-200/80 dark:border-slate-600/80 px-[18px] pb-3.5 pt-4">
           <div className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-lg bg-active text-brand">
             <Sparkles className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
             <div id="ai-modal-title" className="text-sm font-medium">{t('ai.title', { provider: providerName })}</div>
-            <div className="mt-0.5 truncate text-xs text-slate-500">
+            <div className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
               {threadTitle} · {courseName}
             </div>
           </div>
@@ -130,7 +130,7 @@ export function AIPromptModal({
             ref={closeButtonRef}
             onClick={onClose}
             aria-label={t('ai.close')}
-            className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+            className="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 dark:border-slate-600/80 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -149,12 +149,12 @@ export function AIPromptModal({
         </div>
 
         <div className="flex items-center justify-between gap-3 px-[18px] pb-1.5 pt-3">
-          <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
             {t('ai.assembledPrompt')}
           </span>
           <button
             onClick={handleCopyAgain}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-gray-800"
           >
             {copyAgain ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
             {copyAgain ? t('ai.copiedAgain') : t('ai.copyAgain')}
@@ -162,21 +162,21 @@ export function AIPromptModal({
         </div>
 
         <div
-          className="mx-[18px] h-[200px] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3 font-mono text-xs leading-relaxed text-slate-700"
+          className="mx-[18px] h-[200px] overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-600/80 bg-slate-50 dark:bg-slate-900 px-3.5 py-3 font-mono text-xs leading-relaxed text-slate-700 dark:text-slate-200"
           style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
         >
           {prompt}
         </div>
 
-        <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-slate-200/80 px-[18px] py-3.5">
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+        <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-slate-200/80 dark:border-slate-600/80 px-[18px] py-3.5">
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
             {t('ai.opening', { provider: providerName })}
           </div>
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-gray-800"
             >
               {t('ai.cancel')}
             </button>

@@ -15,6 +15,7 @@ import { useLessons } from '../hooks/useLessons';
 import { useI18n, type I18nKey } from '../lib/i18n';
 import { getCourseColor } from '../lib/utils';
 import type { AssignmentWithCourse, ForumThread, LessonWithCourse } from '../types';
+import { CalendarSkeleton } from '../components/Skeletons';
 import './CalendarPage.css';
 
 type CalendarView = 'dayGridMonth' | 'timeGridWeek' | 'listMonth';
@@ -291,16 +292,16 @@ export function CalendarPage() {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-4rem)] flex-col bg-slate-50 md:h-screen md:min-h-0">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-3 py-2 md:h-[52px] md:flex-nowrap md:px-4 md:py-0">
-        <button type="button" onClick={() => calendarRef.current?.getApi().prev()} className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
+    <main className="flex min-h-[calc(100vh-4rem)] flex-col bg-slate-50 dark:bg-slate-900 md:h-screen md:min-h-0">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 px-3 py-2 md:h-[52px] md:flex-nowrap md:px-4 md:py-0">
+        <button type="button" onClick={() => calendarRef.current?.getApi().prev()} className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 dark:border-slate-600/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800">
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <button type="button" onClick={() => calendarRef.current?.getApi().next()} className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
+        <button type="button" onClick={() => calendarRef.current?.getApi().next()} className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 dark:border-slate-600/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800">
           <ChevronRight className="h-4 w-4" />
         </button>
-        <div className="min-w-0 flex-1 text-[15px] font-medium text-slate-950 md:ml-2">{formatRange(dateSet, dateLocale)}</div>
-        <button type="button" onClick={() => calendarRef.current?.getApi().today()} className="ml-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+        <div className="min-w-0 flex-1 text-[15px] font-medium text-slate-950 dark:text-slate-200 md:ml-2">{formatRange(dateSet, dateLocale)}</div>
+        <button type="button" onClick={() => calendarRef.current?.getApi().today()} className="ml-2 rounded-lg border border-slate-200 dark:border-slate-600/80 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800">
           {t('calendar.today')}
         </button>
         <div className="hidden flex-1 md:block" />
@@ -310,7 +311,7 @@ export function CalendarPage() {
             {t('calendar.overdueCount', { count: overdueCount })}
           </div>
         )}
-        <div className="flex rounded-lg border border-slate-200 bg-white p-0.5">
+        <div className="flex rounded-lg border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 p-0.5">
           {viewOptions.map((view) => (
             <button
               key={view.value}
@@ -319,7 +320,7 @@ export function CalendarPage() {
               className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
                 activeView === view.value
                   ? 'border-brand bg-active text-brand'
-                  : 'border-transparent text-slate-500 hover:bg-slate-50'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800'
               }`}
             >
               {t(view.labelKey)}
@@ -329,7 +330,7 @@ export function CalendarPage() {
       </div>
 
       <div className="calendar-layout grid min-h-0 flex-1" style={{ '--panel-width': `${panelWidth}px` } as React.CSSProperties}>
-        <section className="moodle-calendar min-h-[420px] bg-white p-2 md:min-h-0 md:p-4">
+        <section className="moodle-calendar relative min-h-[420px] bg-white dark:bg-gray-900 p-2 md:min-h-0 md:p-4">
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
@@ -345,9 +346,14 @@ export function CalendarPage() {
             eventDisplay="block"
             eventContent={renderEventContent}
           />
+          {(assignmentsQuery.isLoading || forumsQuery.isLoading || lessonsQuery.isLoading) && (
+            <div className="absolute inset-0 z-10 bg-white dark:bg-gray-900">
+              <CalendarSkeleton />
+            </div>
+          )}
         </section>
 
-        <aside className="relative flex min-h-0 flex-col border-t border-slate-200 bg-white md:border-l md:border-t-0">
+        <aside className="relative flex min-h-0 flex-col border-t border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 md:border-l md:border-t-0">
           <div
             role="separator"
             aria-orientation="vertical"
@@ -355,13 +361,13 @@ export function CalendarPage() {
             onMouseDown={startResize}
             className="absolute inset-y-0 left-0 z-10 hidden w-2 -translate-x-1 cursor-col-resize md:block"
           />
-          <div className="border-b border-slate-200 p-4">
-            <div className="text-sm font-semibold text-slate-950">{format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}</div>
-            <div className="mt-1 text-xs text-slate-500">{t('calendar.deadlines', { count: selectedEvents.length })}</div>
+          <div className="border-b border-slate-200 dark:border-slate-600/80 p-4">
+            <div className="text-sm font-semibold text-slate-950 dark:text-slate-200">{format(selectedDate, 'EEEE, MMMM d', { locale: dateLocale })}</div>
+            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('calendar.deadlines', { count: selectedEvents.length })}</div>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {selectedEvents.length === 0 && (
-              <div className="rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-500">
+              <div className="rounded-lg border border-dashed border-slate-200 dark:border-slate-600/80 px-3 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
                 {t('calendar.noDeadlines')}
               </div>
             )}
@@ -377,13 +383,13 @@ export function CalendarPage() {
                   key={event.id}
                   type="button"
                   onClick={() => openEvent(event)}
-                  className="mb-2 block w-full rounded-lg border border-slate-200 p-2.5 text-left hover:border-slate-300 hover:bg-slate-50"
+                  className="mb-2 block w-full rounded-lg border border-slate-200 dark:border-slate-600/80 p-2.5 text-left hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-gray-800"
                 >
-                  <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-slate-500">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
                     <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: colors.dot }} />
                     <span className="truncate">{event.extendedProps.courseName}</span>
                   </div>
-                  <div className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                  <div className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
                     {event.extendedProps.type === 'forum' && <MessageSquareText className="h-3 w-3" />}
                     {event.extendedProps.type === 'lesson' && <BookOpen className="h-3 w-3" />}
                     {event.extendedProps.type === 'forum'
@@ -392,8 +398,8 @@ export function CalendarPage() {
                         ? t('calendar.lessonType')
                       : t('calendar.assignmentType')}
                   </div>
-                  <div className="text-xs font-medium leading-5 text-slate-950">{event.title}</div>
-                  <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
+                  <div className="text-xs font-medium leading-5 text-slate-950 dark:text-slate-200">{event.title}</div>
+                  <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
                     <Clock className="h-3 w-3" />
                     {isSameDay(event.start, new Date())
                       ? t('calendar.dueTodayAt', { time: format(event.start, 'h:mm a', { locale: dateLocale }) })

@@ -108,11 +108,11 @@ export function AssignmentFeed() {
         if (!items.length) return null;
         return (
           <section key={group} className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t(groupLabels[group])}</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{t(groupLabels[group])}</h2>
             {items.map((assignment) => (
               <div
                 key={`${assignment.course}-${assignment.id}`}
-                className={assignment.id === focusedAssignmentId ? 'rounded-xl ring-2 ring-brand ring-offset-2' : undefined}
+                className={assignment.id === focusedAssignmentId ? 'rounded-xl ring-2 ring-brand ring-offset-2 dark:ring-offset-slate-900' : undefined}
               >
                 <AssignmentCard assignment={assignment} defaultExpanded={assignment.id === focusedAssignmentId} />
               </div>
