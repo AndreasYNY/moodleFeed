@@ -13,6 +13,13 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
+/**
+ * Shared tiptap editor styling. Kept here instead of in CSS so both editors
+ * (forum composer + assignment submit) style identically and can use Tailwind
+ * variants such as dark:.
+ */
+export const editorSurfaceClass = 'min-h-[130px] max-h-[35vh] overflow-y-auto outline-none [&_p]:my-2';
+
 export function courseColor(courseId: number) {
   return courseColors[Math.abs(courseId) % courseColors.length];
 }

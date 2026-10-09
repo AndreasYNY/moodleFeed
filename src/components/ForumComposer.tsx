@@ -35,11 +35,28 @@ export function ForumComposer({
       Placeholder.configure({ placeholder: t('composer.placeholder') }),
     ],
     content: '',
+    editorProps: {
+      // Capped height so a long draft scrolls inside the editor instead of
+      // stretching the whole composer up over the thread on mobile.
+      attributes: {
+        class: editorSurfaceClass,
+      },
+      handlePaste(view, event) {
+        const text = event.clipboardData?.getData('text/plain') ?? '';
+        const id = text.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/)?.[1];
+        if (!id) return false;
+        event.preventDefault();
+        view.dispatch(view.state.tr.insertText(''));
+        (editor?.commands as unknown as { setYoutubeVideo: (options: { src: string }) => boolean })?.setYoutubeVideo({ src: text });
+        return true;
+      },
+    },
     immediatelyRender: false,
   });
 
   const html = editor?.getHTML() ?? '';
   const text = editor?.getText() ?? '';
+  const draftLength = text.trim().length;
 
   const toolbar = [
     { icon: Bold, label: t('editor.bold'), action: () => editor?.chain().focus().toggleBold().run() },

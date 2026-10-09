@@ -34,8 +34,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Moodle } from '../lib/moodle';
 import { uploadMoodleFile } from '../lib/moodle-upload';
 import { useI18n } from '../lib/i18n';
-import { getCourseColor } from '../lib/utils';
+import { editorSurfaceClass, getCourseColor } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
+import { useNotificationsStore } from '../store/notifications';
 
 interface Assignment {
   id: number;
@@ -461,6 +462,9 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
       Placeholder.configure({ placeholder: t('assignment.placeholder') }),
     ],
     editorProps: {
+      attributes: {
+        class: editorSurfaceClass,
+      },
       handlePaste(view, event) {
         const text = event.clipboardData?.getData('text/plain') ?? '';
         const id = extractYouTubeId(text);
