@@ -32,8 +32,14 @@ textarea {
   font: inherit;
 }
 
+/*
+ * Card surface. Declared with explicit dark: variants rather than relying on
+ * `.dark .bg-white`-style overrides — Tailwind re-scopes those onto `.mf-card`
+ * via @apply, which silently gives cards a different background from every
+ * other surface in the app.
+ */
 .mf-card {
-  @apply rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-soft;
+  @apply rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-soft dark:border-slate-600/80 dark:bg-gray-900 dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)];
 }
 
 .compact .mf-card {
