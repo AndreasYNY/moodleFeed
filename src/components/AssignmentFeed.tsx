@@ -6,25 +6,34 @@ import { useI18n, type I18nKey } from '../lib/i18n';
 import type { AssignmentWithCourse } from '../types';
 import { AssignmentCard } from './AssignmentCard';
 import { EmptyState } from './EmptyState';
-import { SkeletonCard } from './SkeletonCard';
+import { FilterPills } from './FilterPills';
+import { CardSkeletonGrid } from './Skeletons';
 
 function groupOf(assignment: AssignmentWithCourse) {
   if (assignment.submitted) return 'completed';
+  const now = Date.now();
   const due = assignment.duedate ? assignment.duedate * 1000 : null;
+  // cutoffdate is the hard stop; Moodle rejects submissions once it passes.
+  const cutoff = assignment.cutoffdate ? assignment.cutoffdate * 1000 : null;
   if (!due) return 'upcoming';
-  const diff = due - Date.now();
-  if (diff < 0) return 'overdue';
-  if (diff <= 48 * 60 * 60 * 1000) return 'dueSoon';
+  // Submissions are closed for good — nothing left to act on, so this sinks
+  // below Completed rather than competing for the top of the feed.
+  if (cutoff && cutoff <= now) return 'unavailable';
+  // Past the due date but still inside the cutoff window: late submission is
+  // still possible, so it stays at the top where it can be acted on.
+  if (due < now) return 'overdue';
+  if (due - now <= 48 * 60 * 60 * 1000) return 'dueSoon';
   return 'upcoming';
 }
 
-const groups = ['overdue', 'dueSoon', 'upcoming', 'completed'] as const;
+const groups = ['overdue', 'dueSoon', 'upcoming', 'completed', 'unavailable'] as const;
 const filters = ['all', 'overdue', 'dueSoon', 'done'] as const;
 const groupLabels: Record<(typeof groups)[number], I18nKey> = {
   overdue: 'assignments.group.overdue',
   dueSoon: 'assignments.group.dueSoon',
   upcoming: 'assignments.group.upcoming',
   completed: 'assignments.group.completed',
+  unavailable: 'assignments.group.unavailable',
 };
 const filterLabels: Record<(typeof filters)[number], I18nKey> = {
   all: 'assignments.filter.all',
@@ -71,22 +80,22 @@ export function AssignmentFeed() {
   }, {});
 
   return (
-    <div className="space-y-4 pb-20">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {filters.map((item) => (
-            <button
-              key={item}
-              onClick={() => setFilter(item)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                filter === item ? 'bg-brand text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200'
-              }`}
-            >
-              {t(filterLabels[item])}
-            </button>
-          ))}
-        </div>
-        <select value={sort} onChange={(event) => setSort(event.target.value)} className="mf-focus rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+    <div className="space-y-4 pb-8">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <FilterPills
+          options={filters.map((item) => ({
+            value: item,
+            label: t(filterLabels[item]),
+            count: item === 'all'
+              ? (query.data?.length ?? 0)
+              : item === 'done'
+                ? (counts.completed ?? 0)
+                : (counts[item] ?? 0),
+          }))}
+          value={filter}
+          onChange={(next) => setFilter(next as (typeof filters)[number])}
+        />
+        <select value={sort} onChange={(event) => setSort(event.target.value)} className="mf-focus dark:bg-slate-900 dark:text-slate-200 shrink-0 self-end rounded-lg border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 dark:bg-slate-900 px-3 py-2 text-sm md:self-auto">
           <option value="due">{t('assignments.sort.due')}</option>
           <option value="course">{t('assignments.sort.course')}</option>
         </select>

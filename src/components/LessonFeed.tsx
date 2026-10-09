@@ -4,19 +4,22 @@ import { BookOpen, Check, Clock, ExternalLink, MoreHorizontal, PlayCircle } from
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useAuthErrorRedirect } from '../hooks/auth-guard';
-import { useLessons } from '../hooks/useLessons';
+import { lessonStatus, useLessons } from '../hooks/useLessons';
 import { useI18n, type I18nKey } from '../lib/i18n';
-import { absoluteMoodleUrl, getCourseColor, sanitizeHtml } from '../lib/utils';
+import { absoluteMoodleUrl, getCourseColor, rewriteContentUrls, sanitizeHtml } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import type { LessonWithCourse } from '../types';
 import { EmptyState } from './EmptyState';
-import { SkeletonCard } from './SkeletonCard';
+import { FilterPills } from './FilterPills';
+import { CardSkeletonGrid } from './Skeletons';
 
-const filters = ['all', 'available', 'dueSoon', 'closed', 'done'] as const;
+const filters = ['all', 'overdue', 'dueSoon', 'available', 'answered', 'closed', 'done'] as const;
 const filterLabels: Record<(typeof filters)[number], I18nKey> = {
   all: 'lessons.filter.all',
-  available: 'lessons.filter.available',
+  overdue: 'lessons.filter.overdue',
   dueSoon: 'lessons.filter.dueSoon',
+  available: 'lessons.filter.available',
+  answered: 'lessons.filter.answered',
   closed: 'lessons.filter.closed',
   done: 'lessons.filter.done',
 };
@@ -68,34 +71,23 @@ export function LessonFeed() {
   }, [focusedLessonId, query.isLoading]);
 
   if (query.isLoading) {
-    return <div className="space-y-3">{Array.from({ length: 5 }, (_, index) => <SkeletonCard key={index} />)}</div>;
+    return <CardSkeletonGrid count={5} variant="lesson" />;
   }
 
-  const lessons = (query.data ?? []).filter((lesson) => {
-    const status = lessonStatus(lesson);
-    if (filter === 'all') return true;
-    if (filter === 'done') return lesson.completed;
-    if (filter === 'dueSoon') return status === 'dueSoon' || status === 'overdue';
-    if (filter === 'closed') return status === 'closed' || status === 'locked';
-    return status === 'available';
-  });
+  const allLessons = query.data ?? [];
+  const lessons = allLessons.filter((lesson) => matchesLessonFilter(lesson, filter));
+  const counts = filters.reduce<Record<string, number>>((acc, item) => {
+    acc[item] = allLessons.filter((lesson) => matchesLessonFilter(lesson, item)).length;
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-4 pb-8">
-      <div className="flex flex-wrap gap-2">
-        {filters.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setFilter(item)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-              filter === item ? 'bg-brand text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200'
-            }`}
-          >
-            {t(filterLabels[item])}
-          </button>
-        ))}
-      </div>
+      <FilterPills
+        options={filters.map((item) => ({ value: item, label: t(filterLabels[item]), count: counts[item] ?? 0 }))}
+        value={filter}
+        onChange={(next) => setFilter(next as (typeof filters)[number])}
+      />
 
       {!lessons.length && <EmptyState title={t('lessons.emptyTitle')} body={t('lessons.emptyBody')} />}
 

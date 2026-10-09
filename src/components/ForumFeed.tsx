@@ -10,7 +10,8 @@ import { useAuthStore } from '../store/auth';
 import { useSettingsStore } from '../store/settings';
 import type { ForumThread } from '../types';
 import { EmptyState } from './EmptyState';
-import { SkeletonCard } from './SkeletonCard';
+import { FilterPills } from './FilterPills';
+import { CardSkeletonGrid } from './Skeletons';
 
 const groups = ['notReplied', 'checking', 'replied', 'closed'] as const;
 const filters = ['all', ...groups] as const;
@@ -87,24 +88,15 @@ export function ForumFeed() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap gap-2">
-        {filters.map((item) => (
-          <button
-            key={item}
-            onClick={() => {
-              setFilter(item);
-              setVisibleCount(pageSize);
-            }}
-            className={cn(
-              'rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-slate-200',
-              filter === item ? 'bg-brand text-white ring-brand' : 'bg-white text-slate-600',
-            )}
-          >
-            {t(replyLabels[item])}
-            <span className="ml-1 opacity-75">{counts[item] ?? 0}</span>
-          </button>
-        ))}
-      </div>
+      <FilterPills
+        className="md:flex-1"
+        options={filters.map((item) => ({ value: item, label: t(replyLabels[item]), count: counts[item] ?? 0 }))}
+        value={filter}
+        onChange={(next) => {
+          setFilter(next as (typeof filters)[number]);
+          setVisibleCount(pageSize);
+        }}
+      />
 
       {!filteredThreads.length && (
         <EmptyState title={t('forums.emptyTitle')} body={t('forums.emptyFilterBody')} />
