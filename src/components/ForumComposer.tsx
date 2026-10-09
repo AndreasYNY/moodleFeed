@@ -3,12 +3,13 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Heading2, Heading3, Italic, Link, List, ListOrdered, Loader2, Maximize2, Quote, Sparkles, Underline as UnderlineIcon } from 'lucide-react';
+import { Bold, ChevronUp, Heading2, Heading3, Italic, Link, List, ListOrdered, Loader2, Maximize2, MessageSquarePlus, Minimize2, Quote, Sparkles, Underline as UnderlineIcon, X } from 'lucide-react';
 import { useState } from 'react';
 import { getAiProvider } from '../lib/ai-providers';
 import { useI18n } from '../lib/i18n';
 import { buildAiPrompt, defaultAiPromptTemplate, type DiscussionContext } from '../lib/prompt-builder';
 import { useSettingsStore } from '../store/settings';
+import { cn, editorSurfaceClass } from '../lib/utils';
 import { AIPromptModal } from './AIPromptModal';
 
 export function ForumComposer({
@@ -22,6 +23,7 @@ export function ForumComposer({
 }) {
   const { t } = useI18n();
   const [fullscreen, setFullscreen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [assembledPrompt, setAssembledPrompt] = useState('');
   const forumPromptTemplate = useSettingsStore((state) => state.forumPromptTemplate);
@@ -83,48 +85,88 @@ export function ForumComposer({
     setShowAiModal(true);
   }
 
+  function collapse() {
+    setFullscreen(false);
+    setSheetOpen(false);
+  }
+
   return (
-    <div className={fullscreen ? 'fixed inset-3 z-50 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 shadow-2xl md:inset-4 md:p-4' : 'sticky bottom-16 z-20 border-t border-slate-200 bg-white p-3 shadow-soft md:bottom-0 md:p-4'}>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 md:gap-3">
-        <div className="flex min-w-0 flex-wrap gap-1">
-          {toolbar.map((item) => (
-            <button key={item.label} onClick={item.action} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50" title={item.label}>
-              <item.icon className="h-4 w-4" />
-            </button>
-          ))}
-          <button onClick={() => setFullscreen((value) => !value)} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50" title={t('composer.fullscreen')}>
-            <Maximize2 className="h-4 w-4" />
-          </button>
-        </div>
+    <>
+      {/* Mobile: collapsed trigger. The full composer only appears on demand so the
+          thread stays readable; on md+ the full panel is always rendered. */}
+      {!sheetOpen && !fullscreen && (
         <button
-          onClick={generateWithAi}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-active px-3 py-2 text-sm font-semibold text-brand"
+          type="button"
+          onClick={() => setSheetOpen(true)}
+          className="fixed bottom-16 left-0 right-0 z-20 flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 px-4 py-3 text-left shadow-soft dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] md:hidden"
         >
-          <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">{t('composer.generateWith', { provider: aiProvider.name })}</span>
-          <span className="sm:hidden">{aiProvider.name}</span>
+          <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <MessageSquarePlus className="h-4 w-4 shrink-0 text-brand" />
+            <span className="truncate">{draftLength ? t('composer.continueDraft', { count: draftLength }) : t('composer.writeReply')}</span>
+          </span>
+          <ChevronUp className="h-4 w-4 shrink-0 text-slate-400" />
         </button>
-      </div>
-      <div className="rounded-lg border border-slate-200 px-3 py-2">
-        <EditorContent editor={editor} />
-      </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs text-slate-500">{t('composer.characters', { count: text.length })}</span>
-        <div className="flex gap-2">
-          <button onClick={() => editor?.commands.clearContent()} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600">
-            {t('composer.discard')}
-          </button>
-          <button
-            onClick={async () => {
-              await onPost(html);
-              editor?.commands.clearContent();
-            }}
-            disabled={isPosting}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isPosting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isPosting ? t('composer.posting') : t('composer.postReply')}
-          </button>
+      )}
+
+      <div
+        className={cn(
+          fullscreen
+            ? 'fixed inset-0 z-50 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 p-3 shadow-2xl md:inset-4 md:p-4'
+            : 'sticky bottom-16 z-20 border-t border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 p-3 shadow-soft dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] md:bottom-0 md:p-4',
+          !fullscreen && (sheetOpen ? 'block' : 'hidden md:block'),
+        )}
+      >
+        <div className="mb-3 flex flex-nowrap items-center justify-between gap-2 md:gap-3">
+          <div className="flex min-w-0 flex-nowrap gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {toolbar.map((item) => (
+              <button key={item.label} onClick={item.action} className="shrink-0 rounded-lg border border-slate-200 dark:border-slate-600/80 p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800" title={item.label}>
+                <item.icon className="h-4 w-4" />
+              </button>
+            ))}
+            <button onClick={() => setFullscreen((value) => !value)} className="shrink-0 rounded-lg border border-slate-200 dark:border-slate-600/80 p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800" title={t('composer.fullscreen')}>
+              {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              onClick={generateWithAi}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-active px-3 py-2 text-sm font-semibold text-brand"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('composer.generateWith', { provider: aiProvider.name })}</span>
+              <span className="sm:hidden">{aiProvider.name}</span>
+            </button>
+            <button
+              type="button"
+              onClick={collapse}
+              className="rounded-lg border border-slate-200 dark:border-slate-600/80 p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800 md:hidden"
+              title={t('composer.close')}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-200 dark:border-slate-600/80 px-3 py-2">
+          <EditorContent editor={editor} />
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs text-slate-500 dark:text-slate-400">{t('composer.characters', { count: text.length })}</span>
+          <div className="flex gap-2">
+            <button onClick={() => editor?.commands.clearContent()} className="rounded-lg border border-slate-200 dark:border-slate-600/80 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400">
+              {t('composer.discard')}
+            </button>
+            <button
+              onClick={async () => {
+                await onPost(html);
+                editor?.commands.clearContent();
+              }}
+              disabled={isPosting}
+              className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isPosting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isPosting ? t('composer.posting') : t('composer.postReply')}
+            </button>
+          </div>
         </div>
       </div>
       <AIPromptModal
@@ -136,6 +178,6 @@ export function ForumComposer({
         providerName={aiProvider.name}
         providerUrl={aiProvider.url}
       />
-    </div>
+    </>
   );
 }

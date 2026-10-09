@@ -270,18 +270,20 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
         </div>
 
         {replies.length > 5 && !showAll && (
-          <button onClick={() => setShowAll(true)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600">
+          <button onClick={() => setShowAll(true)} className="rounded-lg border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400">
             {t('discussion.showMore', { count: replies.length - 5 })}
           </button>
         )}
       </div>
       {myFirstReply && (
-        <button
-          onClick={scrollToMyAnswer}
-          className="fixed bottom-[440px] right-4 z-30 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-700 md:bottom-[300px] md:right-6"
-        >
-          {t('discussion.myAnswer')}
-        </button>
+        <div className="sticky top-14 z-10 flex justify-end">
+          <button
+            onClick={scrollToMyAnswer}
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-soft dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:bg-emerald-700"
+          >
+            {t('discussion.myAnswer')}
+          </button>
+        </div>
       )}
       {canReply ? (
         <ForumComposer
