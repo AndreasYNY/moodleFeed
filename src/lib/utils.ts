@@ -55,8 +55,19 @@ export function sanitizeHtml(html = '') {
   return doc.body.innerHTML;
 }
 
-export function rewriteContentUrls(html: string, token: string | null): string {
+export function rewriteContentUrls(html: string, token: string | null, baseUrl?: string | null): string {
   if (!token || typeof window === 'undefined' || !('DOMParser' in window)) return html;
+
+  // Only Moodle-hosted media needs the token appended. Rewriting third-party
+  // URLs would leak the webservice token to them and can break their embeds.
+  let moodleOrigin: string | null = null;
+  if (baseUrl) {
+    try {
+      moodleOrigin = new URL(baseUrl).origin;
+    } catch {
+      moodleOrigin = null;
+    }
+  }
 
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
@@ -64,6 +75,14 @@ export function rewriteContentUrls(html: string, token: string | null): string {
     const src = node.getAttribute('src');
     if (!src || src.startsWith('data:')) return;
     if (/[?&]token=/.test(src)) return;
+
+    let isMoodleHosted: boolean;
+    try {
+      isMoodleHosted = !moodleOrigin || new URL(src, window.location.href).origin === moodleOrigin;
+    } catch {
+      return;
+    }
+    if (!isMoodleHosted) return;
 
     const separator = src.includes('?') ? '&' : '?';
     node.setAttribute('src', `${src}${separator}token=${encodeURIComponent(token)}`);
