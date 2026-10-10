@@ -7,13 +7,15 @@ import type { DatesSetArg, EventClickArg, EventContentArg } from '@fullcalendar/
 import { AlertCircle, BookOpen, ChevronLeft, ChevronRight, Clock, MessageSquareText } from 'lucide-react';
 import { format, formatDistanceToNow, isSameDay } from 'date-fns';
 import type { Locale } from 'date-fns';
-import { MouseEvent, useMemo, useRef, useState } from 'react';
+import { MouseEvent, useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAssignments } from '../hooks/useAssignments';
 import { useForums } from '../hooks/useForums';
 import { useLessons } from '../hooks/useLessons';
 import { useI18n, type I18nKey } from '../lib/i18n';
-import { getCourseColor } from '../lib/utils';
+import { cn, getCourseColor } from '../lib/utils';
+import { chipTone, courseEventTone, eventTone, type StatusTone } from '../lib/status-chip';
+import { useIsDark } from '../hooks/useIsDark';
 import type { AssignmentWithCourse, ForumThread, LessonWithCourse } from '../types';
 import { CalendarSkeleton } from '../components/Skeletons';
 import './CalendarPage.css';
@@ -87,33 +89,46 @@ function lessonStatus(lesson: LessonWithCourse) {
   return 'upcoming';
 }
 
-function getEventColors(assignment: AssignmentWithCourse) {
+/**
+ * Calendar events paint through FullCalendar's inline colour props, so they
+ * resolve a tone + course here and turn it into values in the component, where
+ * the current theme is known. See lib/status-chip.ts.
+ */
+type CalendarTone = StatusTone | 'course';
+
+/** Status badge on the selected-event card. */
+function selectedTone(status: string): StatusTone {
+  if (status === 'overdue') return 'overdue';
+  if (status === 'dueToday') return 'dueSoon';
+  if (status === 'completed') return 'completed';
+  if (status === 'closed') return 'closed';
+  return 'dueSoon';
+}
+
+function assignmentTone(assignment: AssignmentWithCourse): CalendarTone {
   const status = assignmentStatus(assignment);
-  if (status === 'overdue') return { bg: '#FCEBEB', text: '#A32D2D', border: '#F09595' };
-  if (status === 'dueToday') return { bg: '#FAEEDA', text: '#854F0B', border: '#E0A93B' };
-  if (status === 'completed') return { bg: '#EAF3DE', text: '#3B6D11', border: '#97C459' };
-  const color = getCourseColor(assignment.course);
-  return { bg: color.light, text: color.text, border: color.dot };
+  if (status === 'overdue') return 'overdue';
+  if (status === 'dueToday') return 'dueSoon';
+  if (status === 'completed') return 'completed';
+  return 'course';
 }
 
-function getForumEventColors(thread: ForumThread) {
+function forumTone(thread: ForumThread): CalendarTone {
   const status = forumStatus(thread);
-  if (status === 'overdue') return { bg: '#FCEBEB', text: '#A32D2D', border: '#F09595' };
-  if (status === 'dueToday') return { bg: '#FAEEDA', text: '#854F0B', border: '#E0A93B' };
-  if (status === 'completed') return { bg: '#EAF3DE', text: '#3B6D11', border: '#97C459' };
-  if (status === 'closed') return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
-  const color = getCourseColor(thread.courseId);
-  return { bg: color.light, text: color.text, border: color.dot };
+  if (status === 'overdue') return 'overdue';
+  if (status === 'dueToday') return 'dueSoon';
+  if (status === 'completed') return 'completed';
+  if (status === 'closed') return 'closed';
+  return 'course';
 }
 
-function getLessonEventColors(lesson: LessonWithCourse) {
+function lessonTone(lesson: LessonWithCourse): CalendarTone {
   const status = lessonStatus(lesson);
-  if (status === 'overdue') return { bg: '#FCEBEB', text: '#A32D2D', border: '#F09595' };
-  if (status === 'dueToday') return { bg: '#FAEEDA', text: '#854F0B', border: '#E0A93B' };
-  if (status === 'completed') return { bg: '#EAF3DE', text: '#3B6D11', border: '#97C459' };
-  if (status === 'closed') return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
-  const color = getCourseColor(lesson.course);
-  return { bg: color.light, text: color.text, border: color.dot };
+  if (status === 'overdue') return 'overdue';
+  if (status === 'dueToday') return 'dueSoon';
+  if (status === 'completed') return 'completed';
+  if (status === 'closed') return 'closed';
+  return 'course';
 }
 
 function formatRange(arg: DatesSetArg | undefined, locale: Locale) {
@@ -157,13 +172,21 @@ export function CalendarPage() {
   const assignments = useMemo(() => assignmentsQuery.data ?? [], [assignmentsQuery.data]);
   const forumThreads = useMemo(() => forumsQuery.data ?? [], [forumsQuery.data]);
   const lessons = useMemo(() => lessonsQuery.data ?? [], [lessonsQuery.data]);
+  const isDark = useIsDark();
+
+  /** FullCalendar needs literal colours, so resolve the tone against the theme. */
+  const colorsFor = useCallback(
+    (tone: CalendarTone, courseId: number) =>
+      tone === 'course' ? courseEventTone(getCourseColor(courseId), isDark) : eventTone(tone, isDark),
+    [isDark],
+  );
 
   const calendarEvents = useMemo<CalendarEvent[]>(
     () => {
       const assignmentEvents = assignments.flatMap((assignment) => {
         const dueDate = assignmentDueDate(assignment);
         if (!dueDate) return [];
-        const colors = getEventColors(assignment);
+        const colors = colorsFor(assignmentTone(assignment), assignment.course);
         return [{
           id: `assignment-${assignment.id}`,
           title: assignment.name,
@@ -186,7 +209,7 @@ export function CalendarPage() {
         const dueDate = forumDueDate(thread);
         if (!dueDate) return [];
         const discussionId = thread.discussion ?? thread.id;
-        const colors = getForumEventColors(thread);
+        const colors = colorsFor(forumTone(thread), thread.courseId);
         return [{
           id: `forum-${discussionId}`,
           title: thread.name || thread.subject || thread.forumName,
@@ -208,7 +231,7 @@ export function CalendarPage() {
       const lessonEvents = lessons.flatMap((lesson) => {
         const dueDate = lessonDueDate(lesson);
         if (!dueDate) return [];
-        const colors = getLessonEventColors(lesson);
+        const colors = colorsFor(lessonTone(lesson), lesson.course);
         return [{
           id: `lesson-${lesson.coursemodule}`,
           title: lesson.name,
@@ -229,7 +252,7 @@ export function CalendarPage() {
 
       return [...assignmentEvents, ...forumEvents, ...lessonEvents];
     },
-    [assignments, forumThreads, lessons],
+    [assignments, forumThreads, lessons, colorsFor],
   );
 
   const selectedEvents = useMemo(() => eventsForDate(calendarEvents, selectedDate), [calendarEvents, selectedDate]);
@@ -306,7 +329,7 @@ export function CalendarPage() {
         </button>
         <div className="hidden flex-1 md:block" />
         {overdueCount > 0 && (
-          <div className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+          <div className="inline-flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-950/60 px-2.5 py-1 text-xs font-semibold text-red-700 dark:text-red-300">
             <AlertCircle className="h-3.5 w-3.5" />
             {t('calendar.overdueCount', { count: overdueCount })}
           </div>
@@ -372,12 +395,7 @@ export function CalendarPage() {
               </div>
             )}
             {selectedEvents.map((event) => {
-              const colors = getCourseColor(event.extendedProps.courseId);
-              const eventColors = {
-                bg: event.backgroundColor,
-                text: event.textColor,
-                border: event.borderColor,
-              };
+              const courseColors = getCourseColor(event.extendedProps.courseId);
               return (
                 <button
                   key={event.id}
@@ -386,7 +404,7 @@ export function CalendarPage() {
                   className="mb-2 block w-full rounded-lg border border-slate-200 dark:border-slate-600/80 p-2.5 text-left hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-gray-800"
                 >
                   <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: colors.dot }} />
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: courseColors.dot }} />
                     <span className="truncate">{event.extendedProps.courseName}</span>
                   </div>
                   <div className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
@@ -406,8 +424,10 @@ export function CalendarPage() {
                       : formatDistanceToNow(event.start, { addSuffix: true, locale: dateLocale })}
                   </div>
                   <span
-                    className="mt-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-                    style={{ backgroundColor: eventColors.bg, borderColor: eventColors.border, color: eventColors.text }}
+                    className={cn(
+                      'mt-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold',
+                      chipTone[selectedTone(event.extendedProps.status)],
+                    )}
                   >
                     {event.extendedProps.status === 'overdue'
                       ? t('assignment.overdue')
