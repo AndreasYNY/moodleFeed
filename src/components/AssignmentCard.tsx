@@ -19,6 +19,7 @@ import {
   LinkIcon,
   List,
   ListOrdered,
+  Loader2,
   MoreHorizontal,
   Play,
   Quote,
@@ -427,6 +428,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { baseUrl, token } = useAuthStore();
+  const pushToast = useNotificationsStore((state) => state.pushToast);
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -521,13 +523,17 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
     setSubmitting(true);
     setSubmitError('');
     try {
+      let didSubmit = false;
       if (selectedFiles.length && onSubmitFiles) {
         await onSubmitFiles(assignment.id, selectedFiles);
+        didSubmit = true;
       } else if (selectedFiles.length && onSubmitFile) {
         await Promise.all(selectedFiles.map((file) => onSubmitFile(assignment.id, file)));
+        didSubmit = true;
       }
       if (usesOnlineText && onSubmitText) {
         await onSubmitText(assignment.id, html);
+        didSubmit = true;
       }
       if (!onSubmitFile && !onSubmitFiles && !onSubmitText && baseUrl && token) {
         let itemId: number | undefined;
@@ -555,6 +561,10 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
           }),
         ]);
         setSelectedFiles([]);
+        didSubmit = true;
+      }
+      if (didSubmit) {
+        pushToast({ title: t('assignment.submitted'), body: assignment.name });
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : t('error.uploadFailed'));
@@ -850,9 +860,10 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  aria-busy={submitting}
+                  className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Send className="h-4 w-4" />
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   {submitting ? t('assignment.submitting') : t('assignment.submit')}
                 </button>
               </div>

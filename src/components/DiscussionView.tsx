@@ -97,7 +97,10 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
   const replyMutation = useMutation({
     mutationFn: (message: string) =>
       Moodle.reply(baseUrl!, token!, promptPost?.id ?? discussionId, `Re: ${thread?.name ?? t('common.forumReply')}`, message),
-    onSuccess: () => queryClient.invalidateQueries(),
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      pushToast({ title: t('discussion.replyPosted') });
+    },
     onError: () => {
       queryClient.invalidateQueries();
       pushToast({ title: t('discussion.replyError') });
