@@ -22,6 +22,9 @@ export interface Assignment {
   introfiles?: AssignmentSubmissionFile[];
   introattachments?: AssignmentSubmissionFile[];
   duedate?: number;
+  /** Hard deadline after which Moodle rejects submissions regardless of duedate. */
+  cutoffdate?: number;
+  /** When the assignment opens for submissions. */
   allowsubmissionsfromdate?: number;
   submissiondrafts?: number;
   configs?: Array<{ plugin: string; subtype: string; name: string; value: string }>;
