@@ -24,7 +24,7 @@ export function NotificationInbox() {
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
+          <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-red-600 dark:bg-red-700 px-1 text-[10px] font-semibold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -71,7 +71,7 @@ export function NotificationInbox() {
                   </button>
                   <button
                     onClick={() => removeNotification(item.id)}
-                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-gray-700"
+                    className="rounded-lg p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-gray-700"
                     title={t('notifications.dismiss')}
                   >
                     <X className="h-4 w-4" />

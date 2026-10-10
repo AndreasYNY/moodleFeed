@@ -104,7 +104,7 @@ export function ForumComposer({
             <MessageSquarePlus className="h-4 w-4 shrink-0 text-brand" />
             <span className="truncate">{draftLength ? t('composer.continueDraft', { count: draftLength }) : t('composer.writeReply')}</span>
           </span>
-          <ChevronUp className="h-4 w-4 shrink-0 text-slate-400" />
+          <ChevronUp className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
         </button>
       )}
 
@@ -146,7 +146,7 @@ export function ForumComposer({
             </button>
           </div>
         </div>
-        <div className="rounded-lg border border-slate-200 dark:border-slate-600/80 px-3 py-2">
+        <div className="rounded-lg border border-slate-200 dark:border-slate-600/80 bg-white dark:bg-slate-900/60 px-3 py-2">
           <EditorContent editor={editor} />
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">

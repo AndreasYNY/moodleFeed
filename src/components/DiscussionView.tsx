@@ -200,7 +200,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="break-words text-sm font-semibold text-slate-950 dark:text-slate-200">{author}</span>
                         {mine && (
-                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                          <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
                             {t('discussion.you')}
                           </span>
                         )}
@@ -282,7 +282,7 @@ export function DiscussionView({ discussionId }: { discussionId: number }) {
         <div className="sticky top-14 z-10 flex justify-end">
           <button
             onClick={scrollToMyAnswer}
-            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-soft dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:bg-emerald-700"
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 dark:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-soft dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:bg-emerald-700 dark:hover:bg-emerald-600"
           >
             {t('discussion.myAnswer')}
           </button>

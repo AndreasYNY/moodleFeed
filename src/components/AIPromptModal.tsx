@@ -105,7 +105,7 @@ export function AIPromptModal({
   return createPortal(
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/45 p-3"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/45 dark:bg-black/60 p-3"
     >
       <div
         ref={modalRef}

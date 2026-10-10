@@ -21,7 +21,7 @@ function ToastItem({ id, title, body, href }: { id: string; title: string; body?
         </a>
         <button
           onClick={() => dismissToast(id)}
-          className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800"
+          className="rounded-lg p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800"
           title={t('notifications.dismiss')}
         >
           <X className="h-4 w-4" />

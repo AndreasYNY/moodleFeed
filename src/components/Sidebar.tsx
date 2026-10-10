@@ -54,7 +54,7 @@ export function Sidebar() {
           <CourseListSkeleton />
         ) : !!coursesQuery.data?.length && (
           <div className="border-t border-slate-200 dark:border-slate-600/80 px-3 py-3">
-            <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{t('nav.courses')}</div>
+            <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{t('nav.courses')}</div>
             <div className="space-y-1">
               {coursesQuery.data.map((course) => {
                 const color = getCourseColor(course.id);
@@ -85,7 +85,7 @@ export function Sidebar() {
           <CourseListSkeleton rows={4} />
         ) : coursesOpen && !!coursesQuery.data?.length && (
           <div className="max-h-48 overflow-y-auto border-b border-slate-200 dark:border-slate-600/80 px-3 py-2">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{t('nav.courses')}</div>
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{t('nav.courses')}</div>
             <div className="flex flex-wrap gap-1.5">
               {coursesQuery.data.map((course) => {
                 const color = getCourseColor(course.id);
