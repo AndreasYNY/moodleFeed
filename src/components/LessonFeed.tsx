@@ -28,20 +28,9 @@ function lessonUrl(baseUrl: string | null, lesson: LessonWithCourse) {
   return absoluteMoodleUrl(baseUrl, `/mod/lesson/view.php?id=${lesson.coursemodule}`);
 }
 
-function lessonStatus(lesson: LessonWithCourse) {
-  if (lesson.completed) return 'completed';
-  if (lesson.accessInfo?.preventaccessreasons?.length) return 'closed';
-  if (lesson.deadline) {
-    const due = lesson.deadline * 1000;
-    if (due < Date.now()) return 'overdue';
-    if (due - Date.now() <= 48 * 60 * 60 * 1000) return 'dueSoon';
-  }
-  if (lesson.available && lesson.available * 1000 > Date.now()) return 'locked';
-  return 'available';
-}
-
 function statusStyle(status: ReturnType<typeof lessonStatus>) {
   if (status === 'completed') return { bg: '#EAF3DE', text: '#3B6D11', border: '#97C459' };
+  if (status === 'answered') return { bg: '#E6F1FB', text: '#185FA5', border: '#6BA4D8' };
   if (status === 'overdue') return { bg: '#FCEBEB', text: '#A32D2D', border: '#F09595' };
   if (status === 'dueSoon') return { bg: '#FAEEDA', text: '#854F0B', border: '#E0A93B' };
   if (status === 'closed') return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
@@ -49,9 +38,20 @@ function statusStyle(status: ReturnType<typeof lessonStatus>) {
   return { bg: 'var(--accent-light)', text: 'var(--accent-text)', border: 'var(--accent)' };
 }
 
+function matchesLessonFilter(lesson: LessonWithCourse, item: (typeof filters)[number]) {
+  const status = lessonStatus(lesson);
+  if (item === 'all') return true;
+  if (item === 'done') return lesson.completed;
+  if (item === 'answered') return status === 'answered';
+  if (item === 'overdue') return status === 'overdue';
+  if (item === 'dueSoon') return status === 'dueSoon';
+  if (item === 'closed') return status === 'closed' || status === 'locked';
+  return status === 'available';
+}
+
 export function LessonFeed() {
   const { t, dateLocale } = useI18n();
-  const { baseUrl } = useAuthStore();
+  const { baseUrl, token } = useAuthStore();
   const { lessonCmid } = useParams();
   const [searchParams] = useSearchParams();
   const focusedLessonId = useMemo(() => Number(lessonCmid ?? searchParams.get('lesson')), [lessonCmid, searchParams]);

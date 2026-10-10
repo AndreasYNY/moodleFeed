@@ -6,6 +6,35 @@ import { useSettingsStore } from '../store/settings';
 import type { Course, LessonWithCourse } from '../types';
 import { useCourses } from './useCourses';
 
+export type LessonStatus = 'completed' | 'answered' | 'overdue' | 'dueSoon' | 'available' | 'locked' | 'closed';
+
+export function lessonStatus(lesson: LessonWithCourse): LessonStatus {
+  if (lesson.completed) return 'completed';
+  // attemptscount is the "have I actually done this?" signal — Moodle completion
+  // tracking is often unconfigured, so fall back to attempts.
+  if ((lesson.accessInfo?.attemptscount ?? 0) > 0) return 'answered';
+  if (lesson.accessInfo?.preventaccessreasons?.length) return 'closed';
+  if (lesson.deadline) {
+    const due = lesson.deadline * 1000;
+    if (due < Date.now()) return 'overdue';
+    if (due - Date.now() <= 48 * 60 * 60 * 1000) return 'dueSoon';
+  }
+  if (lesson.available && lesson.available * 1000 > Date.now()) return 'locked';
+  return 'available';
+}
+
+/** Lower sorts first — surface what the student can still act on. */
+const lessonStatusOrder: Record<LessonStatus, number> = {
+  overdue: 0,
+  dueSoon: 1,
+  available: 2,
+  locked: 3,
+  answered: 4,
+  completed: 5,
+  // Inaccessible — nothing actionable right now, so it sinks below Completed.
+  closed: 6,
+};
+
 export function useLessons({
   includeCompletions = true,
   includeAccessInfo = true,
@@ -71,7 +100,9 @@ export function useLessons({
     };
   });
 
-  const sortedLessons = lessons.sort((a, b) => {
+  const sortedLessons = [...lessons].sort((a, b) => {
+    const statusDelta = lessonStatusOrder[lessonStatus(a)] - lessonStatusOrder[lessonStatus(b)];
+    if (statusDelta !== 0) return statusDelta;
     const aTime = a.deadline || a.available || Number.MAX_SAFE_INTEGER;
     const bTime = b.deadline || b.available || Number.MAX_SAFE_INTEGER;
     return aTime - bTime;
