@@ -76,6 +76,16 @@ textarea {
   background-color: color-mix(in srgb, var(--mf-brand) 18%, var(--mf-dark-surface));
 }
 
+/*
+ * Accent text needs lightening on dark surfaces. The accent is a runtime CSS
+ * variable, so Tailwind cannot generate a `dark:text-brand` utility for it —
+ * the raw `rgb(var(--mf-brand-rgb))` only reaches ~3.1:1 on a dark card, while
+ * this mix clears 9:1 for every accent.
+ */
+.dark .text-brand {
+  color: color-mix(in srgb, var(--mf-brand) 38%, white);
+}
+
 .text-brand {
   color: rgb(var(--mf-brand-rgb));
 }
