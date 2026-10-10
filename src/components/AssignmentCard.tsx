@@ -35,7 +35,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Moodle } from '../lib/moodle';
 import { uploadMoodleFile } from '../lib/moodle-upload';
 import { useI18n } from '../lib/i18n';
-import { editorSurfaceClass, getCourseColor } from '../lib/utils';
+import { editorSurfaceClass, cn, getCourseColor } from '../lib/utils';
+import { chipTone, type StatusTone } from '../lib/status-chip';
 import { useAuthStore } from '../store/auth';
 import { useNotificationsStore } from '../store/notifications';
 
@@ -110,14 +111,15 @@ type LegacyAssignment = Partial<Assignment> & {
   introattachments?: SubmittedFile[];
 };
 
-const statusStyles = {
-  completed: { bg: '#EAF3DE', text: '#3B6D11' },
-  upcoming: { bg: '#FAEEDA', text: '#854F0B' },
-  dueSoon: { bg: '#FAEEDA', text: '#854F0B' },
-  overdue: { bg: '#FCEBEB', text: '#A32D2D' },
-};
+type AssignmentStatus = 'overdue' | 'dueSoon' | 'upcoming' | 'completed';
 
-const gradedStyle = { bg: '#E6F1FB', text: '#185FA5' };
+/** Maps assignment status to a shared tone — see lib/status-chip.ts. */
+const assignmentTone: Record<AssignmentStatus, StatusTone> = {
+  overdue: 'overdue',
+  dueSoon: 'dueSoon',
+  upcoming: 'dueSoon',
+  completed: 'completed',
+};
 
 function formatFileSize(bytes = 0): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -375,16 +377,14 @@ function Section({
 function Chip({
   children,
   icon,
-  bg,
-  text,
+  tone,
 }: {
   children: React.ReactNode;
   icon?: React.ReactNode;
-  bg: string;
-  text: string;
+  tone: StatusTone;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ backgroundColor: bg, color: text }}>
+    <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium', chipTone[tone])}>
       {icon}
       {children}
     </span>
@@ -655,25 +655,24 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
-            <button type="button" onClick={() => setExpanded((value) => !value)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800" title={expanded ? t('assignment.hideFields') : t('assignment.showFields')}>
+            <button type="button" onClick={() => setExpanded((value) => !value)} className="rounded-lg p-2 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800" title={expanded ? t('assignment.hideFields') : t('assignment.showFields')}>
               <ChevronDown className={`h-4 w-4 transition ${expanded ? 'rotate-180' : ''}`} />
             </button>
           </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Chip bg="#F1F5F9" text="#475569" icon={<FileText className="h-3 w-3" />}>
+          <Chip tone="neutral" icon={<FileText className="h-3 w-3" />}>
             {assignment.submissionType === 'both' ? t('assignment.fileText') : assignment.submissionType === 'onlinetext' ? t('assignment.onlineText') : t('assignment.fileUpload')}
           </Chip>
           <Chip
-            bg={statusStyles[assignment.status].bg}
-            text={statusStyles[assignment.status].text}
+            tone={assignmentTone[assignment.status]}
             icon={assignment.status === 'completed' ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
           >
             {statusLabel}
           </Chip>
           {assignment.isGraded && (
-            <Chip bg={gradedStyle.bg} text={gradedStyle.text} icon={<Star className="h-3 w-3" />}>
+            <Chip tone="graded" icon={<Star className="h-3 w-3" />}>
               {t('assignment.graded')}
             </Chip>
           )}
