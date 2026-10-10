@@ -32,8 +32,8 @@ function replyLabel(thread: ForumThread) {
 }
 
 function replyBadgeClass(label: ReturnType<typeof replyLabel>) {
-  if (label === 'replied') return 'bg-emerald-50 text-emerald-700';
-  if (label === 'notReplied') return 'bg-red-50 text-red-700';
+  if (label === 'replied') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300';
+  if (label === 'notReplied') return 'bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300';
   if (label === 'closed') return 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-400';
   return 'bg-active text-brand';
 }
@@ -124,7 +124,7 @@ export function ForumFeed() {
                       <div className="mb-2 flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
                         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: thread.courseColor }} />
                         <span className="truncate">{thread.courseName}</span>
-                        {thread.courseShortName && <span className="shrink-0 text-slate-400">· {thread.courseShortName}</span>}
+                        {thread.courseShortName && <span className="shrink-0 text-slate-400 dark:text-slate-500">· {thread.courseShortName}</span>}
                       </div>
                       <h2 className="break-words text-base font-semibold text-slate-950 dark:text-slate-200">{thread.name || thread.subject}</h2>
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -159,7 +159,7 @@ export function ForumFeed() {
                               dismissDiscussion(discussionId);
                               setOpenMenuId(null);
                             }}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
                           >
                             <EyeOff className="h-4 w-4" />
                             {t('forums.dismiss')}
