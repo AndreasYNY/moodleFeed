@@ -6,12 +6,13 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useAuthErrorRedirect } from '../hooks/auth-guard';
 import { lessonStatus, useLessons } from '../hooks/useLessons';
 import { useI18n, type I18nKey } from '../lib/i18n';
-import { absoluteMoodleUrl, getCourseColor, rewriteContentUrls, sanitizeHtml } from '../lib/utils';
+import { absoluteMoodleUrl, cn, getCourseColor, rewriteContentUrls, sanitizeHtml } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import type { LessonWithCourse } from '../types';
 import { EmptyState } from './EmptyState';
 import { FilterPills } from './FilterPills';
 import { CardSkeletonGrid } from './Skeletons';
+import { chipTone, type StatusTone } from '../lib/status-chip';
 
 const filters = ['all', 'overdue', 'dueSoon', 'available', 'answered', 'closed', 'done'] as const;
 const filterLabels: Record<(typeof filters)[number], I18nKey> = {
@@ -28,14 +29,20 @@ function lessonUrl(baseUrl: string | null, lesson: LessonWithCourse) {
   return absoluteMoodleUrl(baseUrl, `/mod/lesson/view.php?id=${lesson.coursemodule}`);
 }
 
-function statusStyle(status: ReturnType<typeof lessonStatus>) {
-  if (status === 'completed') return { bg: '#EAF3DE', text: '#3B6D11', border: '#97C459' };
-  if (status === 'answered') return { bg: '#E6F1FB', text: '#185FA5', border: '#6BA4D8' };
-  if (status === 'overdue') return { bg: '#FCEBEB', text: '#A32D2D', border: '#F09595' };
-  if (status === 'dueSoon') return { bg: '#FAEEDA', text: '#854F0B', border: '#E0A93B' };
-  if (status === 'closed') return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
-  if (status === 'locked') return { bg: '#F1F5F9', text: '#475569', border: '#CBD5E1' };
-  return { bg: 'var(--accent-light)', text: 'var(--accent-text)', border: 'var(--accent)' };
+/** Lesson status -> shared chip tone. See lib/status-chip.ts. */
+const lessonTone: Record<ReturnType<typeof lessonStatus>, StatusTone | 'accent'> = {
+  completed: 'completed',
+  answered: 'answered',
+  overdue: 'overdue',
+  dueSoon: 'dueSoon',
+  locked: 'closed',
+  closed: 'closed',
+  available: 'accent',
+};
+
+/** "Available" carries no status of its own, so it borrows the app accent. */
+function lessonToneClass(tone: StatusTone | 'accent') {
+  return tone === 'accent' ? 'border-brand bg-active text-brand' : chipTone[tone];
 }
 
 function matchesLessonFilter(lesson: LessonWithCourse, item: (typeof filters)[number]) {
@@ -95,7 +102,6 @@ export function LessonFeed() {
         {lessons.map((lesson) => {
           const courseColor = getCourseColor(lesson.course);
           const status = lessonStatus(lesson);
-          const colors = statusStyle(status);
           const url = lessonUrl(baseUrl, lesson);
           const dueDate = lesson.deadline ? new Date(lesson.deadline * 1000) : null;
           const availableDate = lesson.available ? new Date(lesson.available * 1000) : null;
@@ -119,7 +125,7 @@ export function LessonFeed() {
                   </div>
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger asChild>
-                      <button type="button" className="rounded-lg p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800" title={t('lessons.actions')}>
+                      <button type="button" className="rounded-lg p-2 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800" title={t('lessons.actions')}>
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </DropdownMenu.Trigger>
@@ -147,8 +153,7 @@ export function LessonFeed() {
                     {t('lessons.lessonType')}
                   </span>
                   <span
-                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium"
-                    style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.text }}
+                    className={cn('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium', lessonToneClass(lessonTone[status]))}
                   >
                     {status === 'completed' ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                     {status === 'completed'
