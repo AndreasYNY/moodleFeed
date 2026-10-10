@@ -367,7 +367,7 @@ function Section({
         className="flex w-full items-center justify-between px-4 py-3 text-left text-[13px] font-medium text-slate-800 dark:text-slate-200"
       >
         {title}
-        <ChevronDown className={`h-4 w-4 text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 text-slate-400 dark:text-slate-500 transition ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && <div className="px-4 pb-4">{children}</div>}
     </section>
@@ -624,7 +624,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
           <div className="flex items-center gap-1">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
-                <button type="button" className="rounded-lg p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800" title={t('assignment.actions')}>
+                <button type="button" className="rounded-lg p-2 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800" title={t('assignment.actions')}>
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenu.Trigger>
@@ -647,7 +647,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                       </a>
                     </DropdownMenu.Item>
                   ) : (
-                    <DropdownMenu.Item disabled className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-400 outline-none">
+                    <DropdownMenu.Item disabled className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-400 dark:text-slate-500 outline-none">
                       <ExternalLink className="h-4 w-4" />
                       {t('assignment.linkUnavailable')}
                     </DropdownMenu.Item>
@@ -768,10 +768,13 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                       setDragging(true);
                     }}
                     onDragLeave={() => setDragging(false)}
-                    className={`cursor-pointer rounded-xl border border-dashed p-5 text-center ${dragging ? 'bg-slate-100' : 'bg-slate-50'}`}
+                    className={cn(
+                      'cursor-pointer rounded-xl border border-dashed border-slate-300 dark:border-slate-600/80 p-5 text-center transition',
+                      dragging ? 'bg-slate-100 dark:bg-gray-800' : 'bg-slate-50 dark:bg-slate-900/60',
+                    )}
                     style={{ borderWidth: 1.5 }}
                   >
-                    <UploadCloud className="mx-auto h-6 w-6 text-slate-400" />
+                    <UploadCloud className="mx-auto h-6 w-6 text-slate-400 dark:text-slate-500" />
                     <div className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
                       {selectedFiles.length ? t('assignment.addMoreFiles') : t('assignment.dropChooseFile')}
                     </div>
@@ -790,7 +793,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                             <FileText className={`h-4 w-4 ${tooLarge || invalidType ? 'text-red-500' : 'text-brand'}`} />
                             <div className="min-w-0 flex-1">
                               <div className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{file.name}</div>
-                              <div className={`text-xs ${tooLarge || invalidType ? 'text-red-600' : 'text-slate-500'}`}>
+                              <div className={`text-xs ${tooLarge || invalidType ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'}`}>
                                 {formatFileSize(file.size)}
                                 {tooLarge ? ` · ${t('assignment.fileTooLarge')}` : ''}
                                 {invalidType ? ` · ${t('assignment.fileTypeNotAllowed')}` : ''}
@@ -799,7 +802,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                             <button
                               type="button"
                               onClick={() => setSelectedFiles((files) => files.filter((selectedFile) => selectedFile !== file))}
-                              className="rounded-lg p-1 text-slate-400 hover:bg-white dark:hover:bg-gray-800"
+                              className="rounded-lg p-1 text-slate-400 dark:text-slate-500 hover:bg-white dark:hover:bg-gray-800"
                               title={t('assignment.removeFile')}
                             >
                               <X className="h-4 w-4" />
@@ -838,14 +841,14 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
                       ▶ {t('assignment.pasteYoutube')}
                     </button>
                   </div>
-                  <div className="min-h-20 px-3 py-2 text-[13px]">
+                  <div className="min-h-20 px-3 py-2 text-[13px] bg-white dark:bg-slate-900/60">
                     <EditorContent editor={editor} />
                   </div>
                 </div>
               )}
 
               {submitError && (
-                <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                <div className="rounded-lg bg-red-50 dark:bg-red-950/60 px-3 py-2 text-sm text-red-700 dark:text-red-300">
                   {submitError}
                 </div>
               )}
