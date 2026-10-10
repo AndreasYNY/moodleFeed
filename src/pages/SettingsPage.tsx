@@ -77,7 +77,7 @@ export function SettingsPage() {
             <h2 className="mb-3 text-base font-semibold text-slate-950 dark:text-slate-200">{t('settings.connection')}</h2>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="min-w-0 break-all text-sm text-slate-600 dark:text-slate-400">{auth.baseUrl}</span>
-              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">{t('settings.connected')}</span>
+              <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">{t('settings.connected')}</span>
             </div>
           </section>
 
@@ -281,14 +281,14 @@ export function SettingsPage() {
             <button onClick={() => queryClient.invalidateQueries()} className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white">{t('settings.syncNow')}</button>
           </section>
 
-          <section id="privacy" className="mf-card space-y-3 border-red-200">
-            <h2 className="text-base font-semibold text-red-700">{t('settings.dangerZone')}</h2>
+          <section id="privacy" className="mf-card space-y-3 border-red-200 dark:border-red-800/60">
+            <h2 className="text-base font-semibold text-red-700 dark:text-red-300">{t('settings.dangerZone')}</h2>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => { auth.logout(); navigate('/login', { replace: true }); }} className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white">
+              <button onClick={() => { auth.logout(); navigate('/login', { replace: true }); }} className="inline-flex items-center gap-2 rounded-lg bg-red-600 dark:bg-red-700 px-3 py-2 text-sm font-semibold text-white">
                 <Unplug className="h-4 w-4" />
                 {t('settings.disconnect')}
               </button>
-              <button onClick={() => { queryClient.clear(); localStorage.clear(); auth.logout(); navigate('/login', { replace: true }); }} className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">
+              <button onClick={() => { queryClient.clear(); localStorage.clear(); auth.logout(); navigate('/login', { replace: true }); }} className="inline-flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-800/60 px-3 py-2 text-sm font-semibold text-red-700 dark:text-red-300">
                 <Trash2 className="h-4 w-4" />
                 {t('settings.clearCache')}
               </button>
@@ -307,7 +307,7 @@ export function SettingsPage() {
                 <Github className="h-4 w-4" />
                 {t('settings.github')}
               </span>
-              <span className="break-all text-xs text-slate-400">github.com/AndreasYNY/moodleFeed</span>
+              <span className="break-all text-xs text-slate-500 dark:text-slate-400">github.com/AndreasYNY/moodleFeed</span>
             </a>
           </section>
         </div>

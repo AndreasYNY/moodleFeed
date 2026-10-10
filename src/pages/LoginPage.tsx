@@ -128,7 +128,7 @@ export function LoginPage() {
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required className="mf-focus dark:bg-slate-900 dark:text-slate-200 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600/80 px-3 py-2" />
           </label>
         </div>
-        {error && <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        {error && <div className="mt-4 rounded-lg bg-red-50 dark:bg-red-950/60 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</div>}
         <button disabled={loading} aria-busy={loading} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           {loading ? t('login.connecting') : t('login.signIn')}
@@ -144,7 +144,7 @@ export function LoginPage() {
               <KeyRound className="h-4 w-4 text-brand" />
               {t('login.mobileAdvanced')}
             </span>
-            <ChevronDown className={`h-4 w-4 text-slate-400 transition ${advancedOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-4 w-4 text-slate-400 dark:text-slate-500 transition ${advancedOpen ? 'rotate-180' : ''}`} />
           </button>
           {advancedOpen && (
             <div className="pt-3">
@@ -196,7 +196,7 @@ export function LoginPage() {
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {t('login.useMobileLink')}
               </button>
-              {mobileMessage && <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{mobileMessage}</div>}
+              {mobileMessage && <div className="mt-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">{mobileMessage}</div>}
             </div>
           )}
         </div>
