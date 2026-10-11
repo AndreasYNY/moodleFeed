@@ -2,6 +2,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useAssignments } from '../hooks/useAssignments';
 import { useForums } from '../hooks/useForums';
+import { collectAttention } from '../lib/assignment-attention';
 import { useI18n } from '../lib/i18n';
 import { useNotificationsStore } from '../store/notifications';
 import { useSettingsStore } from '../store/settings';
@@ -9,6 +10,8 @@ import { useSettingsStore } from '../store/settings';
 interface NotificationSnapshot {
   assignmentIds: number[];
   forumReplies: Record<number, number>;
+  /** Percentage each assignment was last alerted at, so a further drop re-alerts. */
+  lowGrades: Record<number, number>;
   alertedKeys: string[];
 }
 
@@ -35,7 +38,9 @@ function notifyBrowser(title: string, body: string, enabled: boolean) {
 export function NotificationsBridge() {
   const { t, dateLocale } = useI18n();
   const settings = useSettingsStore();
-  const assignmentsQuery = useAssignments({ includeSubmissionStatuses: false });
+  // Submission statuses are needed for grades; the query is shared with the
+  // assignments feed and the Topbar pill, so this does not add extra requests.
+  const assignmentsQuery = useAssignments({ includeSubmissionStatuses: true });
   const forumsQuery = useForums({ checkReplies: false, discussionsPerForum: 10 });
   const addNotification = useNotificationsStore((state) => state.addNotification);
   const pushToastStore = useNotificationsStore((state) => state.pushToast);
@@ -67,6 +72,7 @@ export function NotificationsBridge() {
     const nextSnapshot: NotificationSnapshot = snapshot ?? {
       assignmentIds: currentAssignmentIds,
       forumReplies: currentForumReplies,
+      lowGrades: {},
       alertedKeys: [],
     };
     const alertedKeys = new Set(nextSnapshot.alertedKeys);
@@ -130,9 +136,37 @@ export function NotificationsBridge() {
       });
     }
 
+    if (settings.notifyLowGrades) {
+      const previousLowGrades = snapshot?.lowGrades ?? {};
+      const nextLowGrades: Record<number, number> = {};
+
+      // Alert once when an assignment first drops below the threshold, and again
+      // if it falls further — a re-grade that improves the score is not news.
+      collectAttention(assignments, settings.gradeThreshold).forEach((item) => {
+        const previous = previousLowGrades[item.assignment.id];
+        nextLowGrades[item.assignment.id] = item.percent;
+        if (previous !== undefined && item.percent >= previous) return;
+
+        pushToast(
+          t('notifications.lowGrade'),
+          t('notifications.lowGradeBody', {
+            course: item.assignment.courseShortName ?? item.assignment.courseName,
+            name: item.assignment.name,
+            grade: item.grade.toFixed(2),
+            max: item.gradeMax,
+          }),
+          `assignment-lowgrade-${item.assignment.id}-${Math.round(item.percent)}`,
+          `/assignments?assignment=${item.assignment.id}`,
+        );
+      });
+
+      nextSnapshot.lowGrades = nextLowGrades;
+    }
+
     writeSnapshot({
       assignmentIds: currentAssignmentIds,
       forumReplies: currentForumReplies,
+      lowGrades: nextSnapshot.lowGrades ?? {},
       alertedKeys: [...alertedKeys].slice(-500),
     });
   }, [
@@ -141,9 +175,11 @@ export function NotificationsBridge() {
     currentAssignmentIds,
     currentForumReplies,
     forumsQuery.isLoading,
+    settings.gradeThreshold,
     settings.notifyBeforeMinutes,
     settings.notifyBrowser,
     settings.notifyForumReplies,
+    settings.notifyLowGrades,
     settings.notifyNewAssignments,
     settings.notifyOverdue,
     threads,
