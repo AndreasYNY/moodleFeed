@@ -102,6 +102,7 @@ export function SettingsPage() {
             {[
               ['notifyOverdue', t('settings.overdueAlerts')],
               ['notifyNewAssignments', t('settings.newAssignments')],
+              ['notifyLowGrades', t('settings.lowGrades')],
               ['notifyForumReplies', t('settings.forumReplies')],
             ].map(([key, label]) => (
               <label key={key} className="flex items-center justify-between gap-4 text-sm text-slate-700 dark:text-slate-200">
@@ -109,6 +110,24 @@ export function SettingsPage() {
                 <input type="checkbox" checked={Boolean(settings[key as keyof typeof settings])} onChange={(event) => settings.setSetting(key as never, event.target.checked as never)} />
               </label>
             ))}
+            <label className="block text-sm text-slate-700 dark:text-slate-200">
+              {t('settings.gradeThreshold')}
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={5}
+                value={settings.gradeThreshold}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  // Keep the threshold a usable percentage rather than NaN or a
+                  // value outside 0–100 when the field is cleared or typed into.
+                  settings.setSetting('gradeThreshold', Number.isFinite(next) ? Math.min(100, Math.max(0, next)) : 70);
+                }}
+                className="mf-focus dark:bg-slate-900 dark:text-slate-200 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600/80 px-3 py-2"
+              />
+              <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{t('settings.gradeThresholdHint')}</span>
+            </label>
             <div className="rounded-lg bg-slate-50 dark:bg-slate-900 px-3 py-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
