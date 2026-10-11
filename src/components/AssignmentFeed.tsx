@@ -46,6 +46,9 @@ export function AssignmentFeed() {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const focusedAssignmentId = useMemo(() => Number(searchParams.get('assignment')), [searchParams]);
+  // Bumped on every navigation to an assignment, so re-opening the same card
+  // twice still re-runs the scroll effect below (the id alone would not change).
+  const focusNonce = useMemo(() => searchParams.get('focus') ?? '', [searchParams]);
   const [filter, setFilter] = useState<(typeof filters)[number]>('all');
   const [sort, setSort] = useState('due');
   const query = useAssignments();
@@ -60,7 +63,7 @@ export function AssignmentFeed() {
     requestAnimationFrame(() => {
       document.getElementById(`assignment-${focusedAssignmentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
-  }, [focusedAssignmentId, query.isLoading]);
+  }, [focusedAssignmentId, focusNonce, query.isLoading]);
 
   if (query.isLoading) {
     return <CardSkeletonGrid count={5} variant="assignment" />;
