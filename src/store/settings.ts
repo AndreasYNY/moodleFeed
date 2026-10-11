@@ -20,6 +20,9 @@ interface SettingsState {
   notifyOverdue: boolean;
   notifyNewAssignments: boolean;
   notifyForumReplies: boolean;
+  notifyLowGrades: boolean;
+  /** Percentage below which a grade is treated as needing attention. */
+  gradeThreshold: number;
   notifyBrowser: boolean;
   forumNameFilters: string[];
   forumPromptTemplate: string;
@@ -45,6 +48,8 @@ export const useSettingsStore = create<SettingsState>()(
       notifyOverdue: true,
       notifyNewAssignments: true,
       notifyForumReplies: true,
+      notifyLowGrades: true,
+      gradeThreshold: 70,
       notifyBrowser: false,
       forumNameFilters: [],
       forumPromptTemplate: '',
