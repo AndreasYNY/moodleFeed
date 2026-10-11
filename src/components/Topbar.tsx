@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../lib/i18n';
 import { initials } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
+import { AttentionPill } from './AttentionPill';
 import { NotificationInbox } from './NotificationInbox';
 
 export function Topbar({ title, breadcrumb }: { title: string; breadcrumb?: string }) {
@@ -37,6 +38,7 @@ export function Topbar({ title, breadcrumb }: { title: string; breadcrumb?: stri
         >
           <RefreshCw className="h-4 w-4" />
         </button>
+        <AttentionPill />
         <NotificationInbox />
         <div className="hidden h-8 w-8 place-items-center rounded-full bg-brand text-xs font-semibold text-white sm:grid">
           {initials(userFullName)}
