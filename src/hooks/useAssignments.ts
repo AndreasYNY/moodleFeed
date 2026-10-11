@@ -85,6 +85,12 @@ export function useAssignments({ includeSubmissionStatuses = true }: { includeSu
       graded: lastAttempt?.graded,
       grade: submissionData?.feedback?.grade?.grade,
       gradeDisplay: submissionData?.feedback?.grade?.gradefordisplay,
+      // Must be read from the raw assignment: the `grade` above is the grade
+      // that was awarded and overwrites the raw field, which holds the maximum.
+      gradeMax: typeof assignment.grade === 'number' ? assignment.grade : undefined,
+      maxattempts: assignment.maxattempts,
+      attemptNumber: lastAttempt?.submission?.attemptnumber,
+      attemptReopenMethod: assignment.attemptreopenmethod,
       feedbackText,
       submittedFiles,
       submittedText,

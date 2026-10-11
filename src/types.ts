@@ -27,6 +27,13 @@ export interface Assignment {
   /** When the assignment opens for submissions. */
   allowsubmissionsfromdate?: number;
   submissiondrafts?: number;
+  /** How many attempts are allowed. -1 means unlimited. */
+  maxattempts?: number;
+  /**
+   * Whether an attempt may be reopened after it is closed: 'none' (never),
+   * 'manual' (a teacher reopens it) or 'automatic' (until the student passes).
+   */
+  attemptreopenmethod?: string;
   configs?: Array<{ plugin: string; subtype: string; name: string; value: string }>;
 }
 
@@ -42,6 +49,22 @@ export interface AssignmentWithCourse extends Assignment {
   gradingStatus?: string;
   graded?: boolean;
   gradeDisplay?: string;
+  /**
+   * The grade that was awarded. Moodle returns this as a numeric string
+   * ("97.00000") in practice, so it is read through Number() rather than
+   * assumed to be a number.
+   */
+  grade?: number | string;
+  /**
+   * The assignment's maximum grade, from `mod_assign_get_assignments`. Not the
+   * same as `grade`, which holds the grade that was awarded.
+   */
+  gradeMax?: number;
+  /** Attempts allowed (-1 = unlimited), mirrored from the raw assignment. */
+  maxattempts?: number;
+  /** Which attempt the student is on, 0-indexed. */
+  attemptNumber?: number;
+  attemptReopenMethod?: string;
 }
 
 export interface Lesson {
@@ -100,6 +123,8 @@ export interface AssignmentSubmissionStatus {
     submission?: {
       id?: number;
       status?: string;
+      /** 0-indexed attempt number. */
+      attemptnumber?: number;
       timemodified?: number;
       plugins?: Array<{
         type: string;
@@ -119,7 +144,8 @@ export interface AssignmentSubmissionStatus {
   };
   feedback?: {
     grade?: {
-      grade?: number;
+      /** Moodle returns this as a numeric string, e.g. "97.00000". */
+      grade?: number | string;
       gradefordisplay?: string;
       gradeddate?: number;
       grader?: {
