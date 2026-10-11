@@ -30,7 +30,7 @@ import {
   UploadCloud,
   X,
 } from 'lucide-react';
-import { DragEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { DragEvent, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Moodle } from '../lib/moodle';
 import { uploadMoodleFile } from '../lib/moodle-upload';
@@ -39,6 +39,7 @@ import { editorSurfaceClass, cn, getCourseColor } from '../lib/utils';
 import { chipTone, type StatusTone } from '../lib/status-chip';
 import { useAuthStore } from '../store/auth';
 import { useNotificationsStore } from '../store/notifications';
+import { HintPopover } from './ui/HintPopover';
 
 interface Assignment {
   id: number;
@@ -378,17 +379,27 @@ function Chip({
   children,
   icon,
   tone,
+  detail,
 }: {
   children: React.ReactNode;
   icon?: React.ReactNode;
   tone: StatusTone;
+  /**
+   * Extra context shown on hover and tap. The pill only carries a relative time
+   * ("in 1 day"), so this is where the absolute deadline goes.
+   */
+  detail?: ReactNode;
 }) {
-  return (
+  const pill = (
     <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium', chipTone[tone])}>
       {icon}
       {children}
     </span>
   );
+
+  if (!detail) return pill;
+
+  return <HintPopover label={detail}>{pill}</HintPopover>;
 }
 
 function AttachmentList({ files, token, openFileLabel }: { files?: SubmittedFile[]; token: string | null; openFileLabel: string }) {
@@ -668,6 +679,7 @@ export function AssignmentCard({ assignment: rawAssignment, onSubmitFile, onSubm
           <Chip
             tone={assignmentTone[assignment.status]}
             icon={assignment.status === 'completed' ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+            detail={assignment.dueDate ? dueLabel : undefined}
           >
             {statusLabel}
           </Chip>
